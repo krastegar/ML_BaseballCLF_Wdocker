@@ -1,55 +1,79 @@
-from heapq import merge
+# from heapq import merge
+
+# import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
 
-#Maxbins that have been renamed to final bins
-maxbin_to_dastool = pd.read_csv("/home/bioinfo/Desktop/Kelley_Lab_projects/mse_proj/das_tool_name_key.tsv", sep="\t")
-maxbin_to_dastool.rename(columns = {'Original.Bin.Name':'MaxBins', 
-                       'Renamed.Bin.Name':'DasTool_Optimized_Bins'}, 
-            inplace = True)
-#-----using a the "." as a delimeter to remove .fa part from maxbins column
-maxbin_to_dastool[["MaxBins", "Junk"]] = maxbin_to_dastool['MaxBins'].str.rsplit('.', n=1, expand=True)
-maxbin_to_dastool.drop(columns=maxbin_to_dastool.columns[-1], # removing last column of data frame
-        axis=1, 
-        inplace=True)
-#print(maxbin_to_dastool)
+# import seaborn as sns
 
-# Creating DataFrame of contigs mapped to the maxbins                                                           #das_tool_output_dir_DASTool_scaffolds2bin.tsv instead
-scaffolds_to_maxbins = pd.read_csv("/home/bioinfo/Desktop/Kelley_Lab_projects/mse_proj/das_tool_output_dir_DASTool_scaffolds2bin.txt", sep="\t")
+# Maxbins that have been renamed to final bins
+maxbin_to_dastool = pd.read_csv(
+    "/home/bioinfo/Desktop/Kelley_Lab_projects/mse_proj/das_tool_name_key.tsv", sep="\t"
+)
+maxbin_to_dastool.rename(
+    columns={
+        "Original.Bin.Name": "MaxBins",
+        "Renamed.Bin.Name": "DasTool_Optimized_Bins",
+    },
+    inplace=True,
+)
+# -----using a the "." as a delimeter to remove .fa part from maxbins column
+maxbin_to_dastool[["MaxBins", "Junk"]] = maxbin_to_dastool["MaxBins"].str.rsplit(
+    ".", n=1, expand=True
+)
+maxbin_to_dastool.drop(
+    columns=maxbin_to_dastool.columns[-1],  # removing last column of data frame
+    axis=1,
+    inplace=True,
+)
+# print(maxbin_to_dastool)
+
+# Creating DataFrame of contigs mapped to the maxbins
+scaffolds_to_maxbins = pd.read_csv(
+    "/home/bioinfo/Desktop/Kelley_Lab_projects/mse_proj/das_tool_output_dir_DASTool_scaffolds2bin.txt",
+    sep="\t",
+)
 scaffolds_to_maxbins.columns = ["Contig_Nodes", "MaxBins"]
-#print(scaffolds_to_maxbins)
+# print(scaffolds_to_maxbins)
 
-# Summary Final bins with Maxbins labels which have # of contigs 
-summary_Maxbin_2DasTool = pd.read_csv("/home/bioinfo/Desktop/Kelley_Lab_projects/mse_proj/das_tool_output_dir_DASTool_summary.txt", sep="\t")
-summary_Maxbin_2DasTool.rename(columns = {'bin':'MaxBins'}, # renaming bins coloumn so that I can merge them later
-            inplace = True)
+# Summary Final bins with Maxbins labels which have # of contigs
+summary_Maxbin_2DasTool = pd.read_csv(
+    "/home/bioinfo/Desktop/Kelley_Lab_projects/mse_proj/das_tool_output_dir_DASTool_summary.txt",
+    sep="\t",
+)
+summary_Maxbin_2DasTool.rename(
+    columns={"bin": "MaxBins"},  # renaming bins coloumn so that I can merge them later
+    inplace=True,
+)
 
-#print(summary_Maxbin_2DasTool)
+# print(summary_Maxbin_2DasTool)
 
-#Merged Table of Optimized bins with # of contigs from summary dataframe
-merged = pd.merge( summary_Maxbin_2DasTool,maxbin_to_dastool, on="MaxBins")
-#print(merged)
+# Merged Table of Optimized bins with # of contigs from summary dataframe
+merged = pd.merge(summary_Maxbin_2DasTool, maxbin_to_dastool, on="MaxBins")
+# print(merged)
 
 
-#-----------------I think this is good enough for Dr. Kelley (rest is extra credit)----------------
+# -----------------I think this is good enough for Dr. Kelley (rest is extra credit)----------------
 
-# DataFrame with contigs and the number of reads found in both paired-end metagenomes 
-number_of_ContigReads = pd.read_csv("/home/bioinfo/Desktop/Kelley_Lab_projects/mse_proj/quant.sf", sep="\t")
-number_of_ContigReads.rename(columns={"Name": "Contig_Nodes"},
-                            inplace=True)
-#print(number_of_ContigReads)
+# DataFrame with contigs and the number of reads found in both paired-end metagenomes
+number_of_ContigReads = pd.read_csv(
+    "/home/bioinfo/Desktop/Kelley_Lab_projects/mse_proj/quant.sf", sep="\t"
+)
+number_of_ContigReads.rename(columns={"Name": "Contig_Nodes"}, inplace=True)
+# print(number_of_ContigReads)
 
 # have Nodes connected with maxbins and which also contain number of reads
-Contig_to_MaxBins_withReads = pd.merge(number_of_ContigReads,scaffolds_to_maxbins, on="Contig_Nodes")
-#print(Contig_to_MaxBins_withReads)
+Contig_to_MaxBins_withReads = pd.merge(
+    number_of_ContigReads, scaffolds_to_maxbins, on="Contig_Nodes"
+)
+# print(Contig_to_MaxBins_withReads)
 
 
 # Final DataFrame that has MaxBins, Optimized_Bins, Number of Contigs, Number of Reads (from Salmon)
 final = pd.merge(merged, Contig_to_MaxBins_withReads, on="MaxBins")
 print(final.head)
 print(final.columns)
-'''
+print("stuff")
+"""
 # Making Boxplots with Seaborn
 sns.set(rc = {'figure.figsize':(9,6.5)})
 sns.set_theme(style="whitegrid")
@@ -75,4 +99,4 @@ plt.title("Optimized Bins vs Number of Contigs", fontdict={'fontsize': 14})
 locs, labels = plt.xticks()
 plt.setp(labels, rotation=90)
 plt.show()
-'''
+"""
