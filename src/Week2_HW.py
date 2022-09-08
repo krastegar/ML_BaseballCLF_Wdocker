@@ -1,12 +1,12 @@
+import os
 import sys
 
 import numpy as np
 import pandas as pd
 import plotly.express as px
-from sklearn.datasets import load_iris
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 
 
 def summary_stats(arr):
@@ -39,19 +39,17 @@ def summary_stats(arr):
 
 def main():
 
-    # loading iris dataset from sklearn
-    iris = load_iris()
-
-    # Reading in Iris dataset into pandas DF
-    iris_df = pd.DataFrame(iris.data, columns=iris.feature_names)
-    iris_df["target"] = pd.Series(iris.target)
+    # loading iris dataset from UCI
+    iris_df = pd.read_csv(
+        os.path.dirname(os.path.realpath(__file__)) + "/Iris.csv", sep=","
+    )
 
     # Summary Statistics
-    sepal_length_stats = summary_stats(iris_df["sepal length (cm)"])
-    sepal_width_stats = summary_stats(iris_df["sepal width (cm)"])
-    petal_length_stats = summary_stats(iris_df["petal length (cm)"])
-    petal_width_stats = summary_stats(iris_df["petal width (cm)"])
-    target_stats = summary_stats(iris_df["target"])
+    sepal_length_stats = summary_stats(iris_df["SepalLengthCm"])
+    sepal_width_stats = summary_stats(iris_df["SepalWidthCm"])
+    petal_length_stats = summary_stats(iris_df["PetalLengthCm"])
+    petal_width_stats = summary_stats(iris_df["PetalWidthCm"])
+
     print(
         "sepal length summary: \n",
         sepal_length_stats,
@@ -61,22 +59,20 @@ def main():
         petal_length_stats,
         "\npetal width summary: \n",
         petal_width_stats,
-        "\ntarget summary: \n",
-        target_stats,
     )
 
     # Scatter Plot
     sctplot = px.scatter(
-        data_frame=iris_df, x="sepal length (cm)", y="petal length (cm)", color="target"
+        data_frame=iris_df, x="SepalLengthCm", y="PetalLengthCm", color="Species"
     )
     sctplot.show()
 
     # Boxplot
     boxplt = px.box(
         iris_df,
-        x="target",
-        y="petal length (cm)",
-        color="target",
+        x="Species",
+        y="PetalLengthCm",
+        color="Species",
         notched=True,  # used notched shape
         title="Types of Flowers",
     )
@@ -85,9 +81,9 @@ def main():
     # Violin plot
     violplt = px.violin(
         iris_df,
-        x="target",
-        y="petal length (cm)",
-        color="target",
+        x="Species",
+        y="PetalLengthCm",
+        color="Species",
         title="Types of Flowers",
     )
     violplt.show()
@@ -95,7 +91,7 @@ def main():
     # Pair plots
     pairs = px.scatter_matrix(
         iris_df,
-        color="target",
+        color="Species",
         title="Scatter matrix of iris data set",
         labels=iris_df.columns,
     )
@@ -106,25 +102,28 @@ def main():
     heat = px.imshow(iris_df)
     heat.show()
 
-    # RandomForest Classifier through pipeline
+    # Create Encoded Labels
+    le = LabelEncoder()
+
+    # Running Data through Classifier
     print("Model via Pipeline Predictions")
-    X_orig = iris_df.loc[:, iris_df.columns != "target"]
-    y = iris_df["target"]
+    X_orig, y = Data4Pipe(iris_df, le)
+
     pipeline = Pipeline(
         [
             ("StandardScaler", StandardScaler()),
+            ("OneHotEncoder", OneHotEncoder()),
             ("RandomForest", RandomForestClassifier(random_state=1234)),
         ]
     )
     pipeline.fit(X_orig, y)
-    probability = pipeline.predict_proba(X_orig)
-    prediction = pipeline.predict(X_orig)
-    print(f"Probability: {probability}")
-    print(f"Predictions: {prediction}")
+    Metrics(X_orig, pipeline)
 
     # Gradient Boosted Methods:
     # os.path.dirname(os.path.realpath(__file__))
     # this is a command that lets me find path of current file
+    print("BOOOSSSST")
+
     BoostPipe = Pipeline(
         [
             ("StandardScaler", StandardScaler()),
@@ -132,9 +131,22 @@ def main():
         ]
     )
     BoostPipe.fit(X_orig, y)
-    probability = BoostPipe.predict_proba(X_orig)
-    prediction = BoostPipe.predict(X_orig)
+    Metrics(X_orig, BoostPipe)
+
     return
+
+
+def Metrics(X_orig, pipeline):
+    probability = pipeline.predict_proba(X_orig)
+    prediction = pipeline.predict(X_orig)
+    print(f"Probability: {probability}")
+    print(f"Predictions: {prediction}")
+
+
+def Data4Pipe(iris_df, le):
+    X_orig = iris_df.drop(["Species", "Id"], axis=1)
+    y = le.fit_transform(iris_df["Species"])
+    return X_orig, y
 
 
 if __name__ == "__main__":
