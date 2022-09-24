@@ -53,22 +53,26 @@ SELECT
 -- Intermediate Temp table 
 DROP TEMPORARY TABLE IF EXISTS temp; 
 CREATE TEMPORARY TABLE temp
-SELECT bc.game_id, batter, atBat, Hit, team_id, local_date,
+SELECT bc.game_id, bc.batter, atBat, Hit, team_id, local_date,
 STR_TO_DATE(g.local_date , "%Y-%m-%d %H:%i:%s")
 FROM batter_counts bc 
 JOIN game g 
 ON bc.game_id = g.game_id; 
 
 -- Self Join my final rol_avg
+DROP TABLE IF EXISTS Rol_AVG;
 CREATE TABLE Rol_AVG
 SELECT t.atBat, t.Hit, t.batter,
 SUM(t.Hit)/NULLIF (SUM(t.atBat),0) as average,
 STR_TO_DATE(t.local_date , "%Y-%m-%d %H:%i:%s")
-from temp as t 
-join temp as rolling_avg
-on t.local_date
-BETWEEN DATE_ADD(t.local_date, INTERVAL -99 DAY) and t.local_date  
+FROM temp as t 
+JOIN temp as rolling_avg
+ON t.batter = rolling_avg.batter 
+	AND t.local_date > rolling_avg.local_date 
+	AND rolling_avg.local_date BETWEEN t.local_date - INTERVAL 100 DAY 
+	AND t.local_date
 GROUP BY rolling_avg.batter
 ORDER BY rolling_avg.local_date DESC;
 
-
+-- a.batter = b.batter and a.local_date > b.local_date and b.local_date between  a.local_date - INTERVAL 100 DAY and a.local_date
+-- BETWEEN DATE_ADD(t.local_date, INTERVAL -99 DAY) and t.local_date 
