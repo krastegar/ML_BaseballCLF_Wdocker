@@ -73,6 +73,3 @@ ON t.batter = rolling_avg.batter
 	AND t.local_date
 GROUP BY rolling_avg.batter
 ORDER BY rolling_avg.local_date DESC;
-
--- a.batter = b.batter and a.local_date > b.local_date and b.local_date between  a.local_date - INTERVAL 100 DAY and a.local_date
--- BETWEEN DATE_ADD(t.local_date, INTERVAL -99 DAY) and t.local_date 
