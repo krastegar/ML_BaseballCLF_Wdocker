@@ -59,12 +59,17 @@ FROM batter_counts bc
 JOIN game g 
 ON bc.game_id = g.game_id; 
 
+-- make my query run faster by adding index and storage engine
+CREATE UNIQUE INDEX batter_game_idx ON temp(batter, game_id);
+CREATE INDEX batter_idx on temp(batter);
+ALTER TABLE temp ENGINE = MyISAM; 
+
 -- Self Join my final rol_avg
 DROP TABLE IF EXISTS Rol_AVG;
 CREATE TABLE Rol_AVG
 SELECT t.atBat, t.Hit, t.batter,
 SUM(t.Hit)/NULLIF (SUM(t.atBat),0) as average,
-STR_TO_DATE(t.local_date , "%Y-%m-%d %H:%i:%s")
+STR_TO_DATE(t.local_date , "%Y-%m-%d %H:%i:%s") as date
 FROM temp as t 
 JOIN temp as rolling_avg
 ON t.batter = rolling_avg.batter 
@@ -73,3 +78,6 @@ ON t.batter = rolling_avg.batter
 	AND t.local_date
 GROUP BY rolling_avg.batter
 ORDER BY rolling_avg.local_date DESC;
+
+SELECT *
+
