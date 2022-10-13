@@ -53,7 +53,7 @@ SELECT
 -- Intermediate Temp table 
 DROP TEMPORARY TABLE IF EXISTS temp; 
 CREATE TEMPORARY TABLE temp
-SELECT bc.game_id, bc.batter, atBat, Hit, team_id, local_date,
+SELECT bc.game_id, bc.batter, atBat, Hit, team_id, local_date, home_type,
 STR_TO_DATE(g.local_date , "%Y-%m-%d %H:%i:%s")
 FROM batter_counts bc 
 JOIN game g 
@@ -80,4 +80,5 @@ GROUP BY rolling_avg.batter
 ORDER BY rolling_avg.local_date DESC;
 
 SELECT *
+FROM temp ;
 
