@@ -18,7 +18,7 @@ class read_data:
     def __init__(
         self,
         pathway="/home/bioinfo/Desktop/BDA_602/src/heart.csv",
-        response="Sex",
+        response="Sex", # --- code breaks when using sex as response
     ):
         self.pathway = pathway
         self.response = response
@@ -77,21 +77,13 @@ class read_data:
                 # print(self.columns[index], " Boolean")
                 continue
             # cat_array = cat_array + bool_array
-        '''
-        # seeing what type of variable the predictor is
-        if self.response in bool_array:
-             group_resp = "boolean"
-        elif self.response in cat_array:
-             group_resp = "categorical"
-        elif self.response in cont_array:
-             group_resp = "continuous"
-        else:
-             raise TypeError("Unknown Input")
-        '''
 
         return cont_array, cat_array, bool_array
     
     def get_response_type(self):
+        '''
+        Creating a function to return the type of "response name" and "response type"
+        '''
         cont_array, cat_array, bool_array = self.checkColIsContOrCat()
         if self.response in bool_array:
             group_resp = "boolean"
