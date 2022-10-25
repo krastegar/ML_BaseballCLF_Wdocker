@@ -1,13 +1,17 @@
+import random
 import sys
+from typing import List  # might not need this
 
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import statsmodels.api
 from plotly import express as px
 from plotly import figure_factory as ff
 from plotly import graph_objects as go
 from plotly.io import to_html
 from scipy.stats import binned_statistic
+from sklearn import datasets
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
@@ -18,7 +22,7 @@ class read_data:
     def __init__(
         self,
         pathway="/home/bioinfo/Desktop/BDA_602/src/heart.csv",
-        response="Sex", # --- code breaks when using sex as response
+        response="Cholesterol",
     ):
         self.pathway = pathway
         self.response = response
@@ -79,22 +83,22 @@ class read_data:
             # cat_array = cat_array + bool_array
 
         return cont_array, cat_array, bool_array
-    
-    def get_response_type(self):
-        '''
-        Creating a function to return the type of "response name" and "response type"
-        '''
+
+    def get_col_type(self, col):
+        """
+        Creating a function to return the column type
+        """
         cont_array, cat_array, bool_array = self.checkColIsContOrCat()
-        if self.response in bool_array:
+        if col in bool_array:
             group_resp = "boolean"
-        elif self.response in cat_array:
+        elif col in cat_array:
             group_resp = "categorical"
-        elif self.response in cont_array:
+        elif col in cont_array:
             group_resp = "continuous"
         else:
             raise TypeError("Unknown Input")
 
-        return self.response, group_resp
+        return group_resp
 
 
 class Cat_vs_Cont(read_data):
@@ -247,7 +251,7 @@ class RF_importance(read_data):
     def RF_regressor(self):
         # loading data
         df = self.ChangeBinaryToBool()
-        #df[self.boolean] = df[self.boolean].astype(int) # changing booleans into ints
+        # df[self.boolean] = df[self.boolean].astype(int) # changing booleans into ints
 
         # Split data into features and response
         X = df[self.continuous]
@@ -276,26 +280,27 @@ class DiffMeanResponse(read_data):
     def bin_params(self, bins_edge):
         bin_lower, bin_upper, bin_center = [], [], []
         # have to start at index 1 and then subtract 1 to get index 0
-        for edge in range(1, len(bins_edge)): 
-            lower = bins_edge[edge-1]
+        for edge in range(1, len(bins_edge)):
+            lower = bins_edge[edge - 1]
             upper = bins_edge[edge]
-            center = (upper+lower)/2 
+            center = (upper + lower) / 2
             bin_lower.append(lower)
             bin_upper.append(upper)
             bin_center.append(center)
         return bin_lower, bin_upper, bin_center
 
-    def squared_diffs(self, 
-                        bin_means, 
-                        bins_edge, 
-                        pop_mean_response,
-                        population_proportion
-                        ):
+    def squared_diffs(
+        self, bin_means, bins_edge, pop_mean_response, population_proportion
+    ):
 
         mean_square_diff, weighted_square_diff = [], []
         for mean in range(len(bin_means)):
-            UnWeighted=(1/len(bins_edge))*(bin_means[mean]-pop_mean_response)**2 
-            weighted = (population_proportion[mean])*(bin_means[mean]-pop_mean_response)**2
+            UnWeighted = (1 / len(bins_edge)) * (
+                bin_means[mean] - pop_mean_response
+            ) ** 2
+            weighted = (population_proportion[mean]) * (
+                bin_means[mean] - pop_mean_response
+            ) ** 2
             mean_square_diff.append(UnWeighted)
             weighted_square_diff.append(weighted)
 
@@ -303,102 +308,232 @@ class DiffMeanResponse(read_data):
 
     def Mean_Squared_DF(self):
 
-        
         # Reading in df
         df = self.ChangeBinaryToBool()
-       
-        #--------------FOUND A WAY TO DO MEAN OF RESPONSE ------------------------------
-        if df[self.predictors].dtype != ('int64', 'float64'):
-            
-            # determining if response is cat or cont
-            # if cat use label encoder to make bins 
-            unique_len = len(np.unique(df[self.predictors]))            
+
+        # Getting response type
+        response_type = self.get_col_type(self.response)
+        predictor_type = self.get_col_type(self.predictors)
+        print(predictor_type)
+
+        # Predictor and response Data
+        predictor_data, response_data = df[self.predictors], df[self.response]
+
+        # --------------FOUND A WAY TO DO MEAN OF RESPONSE ------------------------------
+        # This first condition only deals with categorical predictors not categorical response
+        if response_type == "boolean":
+
+            # if cat use label encoder to make bins
+            unique_len = len(np.unique(predictor_data))
             le = LabelEncoder()
-            label_fit=le.fit_transform(df[self.predictors])
-            mean_stat = binned_statistic(label_fit, df[self.response],
-                                statistic='mean', 
-                                bins=unique_len
-                                )
+            label_fit = le.fit_transform(predictor_data)
+            mean_stat = binned_statistic(
+                label_fit, response_data, statistic="mean", bins=unique_len
+            )
             bin_count, bins_edge = np.histogram(label_fit, bins=unique_len)
-            population_proportion = bin_count/len(df)
+            population_proportion = bin_count / len(df)
             bin_means = mean_stat.statistic
-            pop_mean_response = np.mean(df[self.response])
-            
+            pop_mean_response = np.mean(response_data)
+
             bin_lower, bin_upper, bin_center = self.bin_params(bins_edge)
-            mean_square_diff, weighted_diff = self.squared_diffs(bins_edge=bins_edge,
-                                                                bin_means=bin_means,
-                                                                pop_mean_response=pop_mean_response,
-                                                                population_proportion=population_proportion)
+            mean_square_diff, weighted_diff = self.squared_diffs(
+                bins_edge=bins_edge,
+                bin_means=bin_means,
+                pop_mean_response=pop_mean_response,
+                population_proportion=population_proportion,
+            )
             bin_label = np.unique(le.inverse_transform(label_fit))
 
-        else: 
-            mean_stat = binned_statistic(df[self.predictors], df[self.response],
-                                statistic='mean', 
-                                bins=9
-                                )
-            pop_mean_response = np.mean(df[self.response])
-            bin_count, bins_edge = np.histogram(df[self.predictors], bins=9)
-            population_proportion = bin_count/len(df)
+        elif (
+            response_type == "continuous"
+        ):  # this breaks when response type is continuous and predictor is boolean?
+            if predictor_type == "categorical":
+                le = LabelEncoder()
+                label_fit = le.fit_transform(predictor_data)
+                predictor_data = label_fit
+                bin_size = len(np.unique(predictor_data))
+            elif predictor_type == "boolean":
+                bin_size = len(np.unique(predictor_data))
+                predictor_data = predictor_data.astype(int)
+            elif predictor_type == "continuous":
+                bin_size = 9
+            else:
+                raise TypeError("No Category Matches predictor")
+
+            mean_stat = binned_statistic(
+                predictor_data, response_data, statistic="mean", bins=bin_size
+            )
+            pop_mean_response = np.mean(response_data)
+            bin_count, bins_edge = np.histogram(predictor_data, bins=bin_size)
+            population_proportion = bin_count / len(df)
             bin_means = mean_stat.statistic
             bin_lower, bin_upper, bin_center = self.bin_params(bins_edge)
-            mean_square_diff, weighted_diff = self.squared_diffs(bins_edge=bins_edge,
-                                                                bin_means=bin_means,
-                                                                pop_mean_response=pop_mean_response,
-                                                                population_proportion=population_proportion)
-            bin_label = np.unique(mean_stat.binnumber)
-        
+            mean_square_diff, weighted_diff = self.squared_diffs(
+                bins_edge=bins_edge,
+                bin_means=bin_means,
+                pop_mean_response=pop_mean_response,
+                population_proportion=population_proportion,
+            )
+            bin_label = np.unique(df[self.predictors])
+
+        else:
+            raise TypeError("Response needs to be continuous or boolean")
+
         mean_diff_df = pd.DataFrame(
-                {'Bin': bin_label,
-                'LowerBin': bin_lower,
+            {
+                "Bin": bin_label,
+                "LowerBin": bin_lower,
                 "UpperBin": bin_upper,
                 "BinCenters": bin_center,
                 "BinCount": bin_count,
-                "BinMeans": bin_means, 
+                "BinMeans": bin_means,
                 "PopulationMean": pop_mean_response,
                 "PopulationProportion": population_proportion,
                 "MeanSquaredDiff": mean_square_diff,
-                "MeanSquaredDiffWeighted": weighted_diff}
-                    )
-        mean_diff_df = mean_diff_df .sort_values("MeanSquaredDiffWeighted", ascending=False).reset_index(drop=True)
+                "MeanSquaredDiffWeighted": weighted_diff,
+            }
+        )
+        mean_diff_df = mean_diff_df.sort_values(
+            "MeanSquaredDiffWeighted", ascending=False
+        ).reset_index(drop=True)
         return mean_diff_df
-        
+
     def plot_Mean_diff(self):
-        
+
         mean_diff_df = self.Mean_Squared_DF()
         fig = go.Figure(
             layout=go.Layout(
-            title="NOT SURE",
-            yaxis2=dict(overlaying="y", side="right"),
-                )
+                title="NOT SURE",
+                yaxis2=dict(overlaying="y", side="right"),
             )
+        )
         fig.add_trace(
-            go.Bar(name="counts", x=mean_diff_df["BinCenters"], y=mean_diff_df["BinCount"], yaxis="y1"),
-            )
+            go.Bar(
+                name="counts",
+                x=mean_diff_df["BinCenters"],
+                y=mean_diff_df["BinCount"],
+                yaxis="y1",
+            ),
+        )
         fig.add_trace(
             go.Scatter(
-                name="Pop-Mean", x=mean_diff_df["BinCenters"], y=mean_diff_df["PopulationMean"], yaxis="y2"
+                name="Pop-Mean",
+                x=mean_diff_df["BinCenters"],
+                y=mean_diff_df["PopulationMean"],
+                yaxis="y2",
             )
-        )      
+        )
         fig.add_trace(
             go.Scatter(
                 name="Squared diff",
                 x=mean_diff_df["BinCenters"],
-                y = mean_diff_df['BinMeans'],
+                y=mean_diff_df["BinMeans"],
                 yaxis="y2",
             )
         )
-        fig.update_layout(
-            title=f"Difference w/ Mean Response: {self.predictors}"
-        )
+        fig.update_layout(title=f"Difference w/ Mean Response: {self.predictors}")
         fig.update_layout(
             xaxis_title="Predictor", yaxis_title="Population", yaxis2_title="Response"
-
         )
         fig.update_yaxes(rangemode="tozero")
-        fig.update_xaxes(tickvals=mean_diff_df['BinCenters'],
-                        ticktext=mean_diff_df['Bin'])
+        fig.update_xaxes(
+            tickvals=mean_diff_df["BinCenters"], ticktext=mean_diff_df["Bin"]
+        )
         fig.show()
         return
+
+
+def get_test_data_set(data_set_name: str = None):
+    """Function to load a few test data sets
+
+    :param:
+    data_set_name : string, optional
+        Data set to load
+
+    :return:
+    data_set : :class:`pandas.DataFrame`
+        Tabular data, possibly with some preprocessing applied.
+    predictors :list[str]
+        List of predictor variables
+    response: str
+        Response variable
+    """
+    seaborn_data_sets = ["mpg", "tips", "titanic", "titanic_2"]
+    sklearn_data_sets = ["boston", "diabetes", "breast_cancer"]
+    all_data_sets = seaborn_data_sets + sklearn_data_sets
+
+    TITANIC_PREDICTORS = [
+        "pclass",
+        "sex",
+        "age",
+        "sibsp",
+        "embarked",
+        "parch",
+        "fare",
+        "who",
+        "adult_male",
+        "deck",
+        "embark_town",
+        "alone",
+        "class",
+    ]
+    if data_set_name is None:
+        data_set_name = random.choice(all_data_sets)
+    else:
+        if data_set_name not in all_data_sets:
+            raise Exception(f"Data set choice not valid: {data_set_name}")
+
+    if data_set_name in seaborn_data_sets:
+        if data_set_name == "mpg":
+            data_set = sns.load_dataset(name="mpg").dropna().reset_index()
+            predictors = [
+                "cylinders",
+                "displacement",
+                "horsepower",
+                "weight",
+                "acceleration",
+                "origin",
+                "name",
+            ]
+            response = "mpg"
+        elif data_set_name == "tips":
+            data_set = sns.load_dataset(name="tips").dropna().reset_index()
+            predictors = [
+                "total_bill",
+                "sex",
+                "smoker",
+                "day",
+                "time",
+                "size",
+            ]
+            response = "tip"
+        elif data_set_name == "titanic":
+            data_set = sns.load_dataset(name="titanic").dropna()
+            predictors = TITANIC_PREDICTORS
+            response = "survived"
+        elif data_set_name == "titanic_2":
+            data_set = sns.load_dataset(name="titanic").dropna()
+            predictors = TITANIC_PREDICTORS
+            response = "alive"
+    elif data_set_name in sklearn_data_sets:
+        if data_set_name == "boston":
+            data = datasets.load_boston()
+            data_set = pd.DataFrame(data.data, columns=data.feature_names)
+            data_set["CHAS"] = data_set["CHAS"].astype(str)
+        elif data_set_name == "diabetes":
+            data = datasets.load_diabetes()
+            data_set = pd.DataFrame(data.data, columns=data.feature_names)
+            data_set["gender"] = ["1" if i > 0 else "0" for i in data_set["sex"]]
+        elif data_set_name == "breast_cancer":
+            data = datasets.load_breast_cancer()
+            data_set = pd.DataFrame(data.data, columns=data.feature_names)
+
+        data_set["target"] = data.target
+        predictors = data.feature_names
+        response = "target"
+
+    print(f"Data set selected: {data_set_name}")
+    return data_set, predictors, response
 
 
 def main():
@@ -407,18 +542,17 @@ def main():
     object = read_data()
 
     # -- testing DF w/ Mean Response
-    bins= DiffMeanResponse('FastingBS')
+    bins = DiffMeanResponse("ChestPainType")
     msd = bins.Mean_Squared_DF()
     print(msd)
     plots = bins.plot_Mean_diff()
-    print(object.get_response_type())
+
     # split predictor columns into respective groups
     # and response variable category
 
     continuous, categorical, boolean = object.checkColIsContOrCat()
-    response = object.get_response_type()
-    
-    '''
+
+    """
     # plotting continuous predictors with response
     stats_values = []
     if continuous is not None:
@@ -459,7 +593,7 @@ def main():
     stats_df.columns=['Feature', 't-val', 'p-val']
     stats_df['Feature_Importance'] = np.array(feature_ranking['Feature_Importance']).tolist()
     print(stats_df)
-    '''
+    """
     return
 
 
