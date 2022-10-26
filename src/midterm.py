@@ -1,3 +1,5 @@
+from argparse import ArgumentError
+from nis import cat
 import random
 import sys
 from typing import List  # might not need this
@@ -12,7 +14,7 @@ from plotly import graph_objects as go
 from plotly.io import to_html
 from scipy.stats import binned_statistic
 from sklearn import datasets
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -147,7 +149,7 @@ class Cat_vs_Cont(read_data):
     def contResponse_vs_catPredictor(self):
 
         hist_data = [self.df[self.response]]
-        group_labels = [f"{self.df[self.response].name}"]  # name of the dataset
+        group_labels = [f"{self.df[self.categorical].name}"]  # name of the dataset
         fig = ff.create_distplot(hist_data, group_labels)
         fig.show()
 
@@ -161,7 +163,7 @@ class Cat_vs_Cont(read_data):
 
         # I am using self.continuous as a place holder for another categorical variaible
         conf_matrix = confusion_matrix(
-            self.df[self.response], self.df[self.continuous]
+            self.df[self.response], self.df[self.categorical]
         )
         fig_no_relationship = go.Figure(
             data=go.Heatmap(z=conf_matrix, zmin=0, zmax=conf_matrix.max())
@@ -225,7 +227,7 @@ class Cat_vs_Cont(read_data):
 
         # plotting (such a bitch to figure out) ---- how the f did i figure this out
         # the problem is with the y variable, it is in True/False, needed to change it to 0/1
-        fig = px.scatter(x=self.df['pclass'], y=df[self.response].astype(int), trendline="ols")
+        fig = px.scatter(x=self.df[self.continuous], y=df[self.response].astype(int), trendline="ols")
         fig.update_layout(
             title=f"Variable: {df[self.continuous].name}: (t-value={t_value}) (p-value={p_value})",
             xaxis_title=f"{df[self.continuous].name}",
@@ -248,19 +250,20 @@ class RF_importance(read_data):
         i.e)list of continuous columns, categorical columns, ....etc
     """
 
-    def __init__(self, continuous, categorical=None, boolean=None, *args, **kwargs):
+    def __init__(self, regressor = 1,continuous=None, categorical=None, boolean=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.continuous = continuous
         self.categorical = categorical
         self.boolean = boolean
+        self.regressor = regressor
 
-    def RF_regressor(self):
+    def RF_rank(self):
         # loading data
         df = self.ChangeBinaryToBool()
         # df[self.boolean] = df[self.boolean].astype(int) # changing booleans into ints
 
         # Split data into features and response
-        X = df[self.continuous]
+        X = df[self.predictors]
         y = df[self.response].astype(int)
 
         # Train/Test/Split
@@ -269,11 +272,21 @@ class RF_importance(read_data):
         )
 
         # fit regressor model
-        RandForest_regressor = RandomForestRegressor(max_depth=4, random_state=42)
-        RF_clf = RandForest_regressor.fit(X_train, y_train)
-        df_feature_importance = pd.DataFrame(
-            RF_clf.feature_importances_, index=X.columns, columns=["Feature_Importance"]
-        ).sort_values("Feature_Importance", ascending=False)
+        if self.regressor ==  1:
+            RandForest_regressor = RandomForestRegressor(max_depth=4, random_state=42)
+            RF_clf = RandForest_regressor.fit(X_train, y_train)
+            df_feature_importance = pd.DataFrame(
+                RF_clf.feature_importances_, index=X.columns, columns=["Feature_Importance"]
+            ).sort_values("Feature_Importance", ascending=False)
+        elif self.regressor == 0:
+            RandForest_regressor = RandomForestRegressor(max_depth=4, random_state=42)
+            RF_clf = RandForest_regressor.fit(X_train, y_train)
+            df_feature_importance = pd.DataFrame(
+                RF_clf.feature_importances_, index=X.columns, columns=["Feature_Importance"]
+            ).sort_values("Feature_Importance", ascending=False)
+        
+        else: raise ArgumentError("Invalid option inputted")
+
 
         return df_feature_importance
 
@@ -412,7 +425,7 @@ class DiffMeanResponse(read_data):
         mean_diff_df = self.Mean_Squared_DF()
         fig = go.Figure(
             layout=go.Layout(
-                title="NOT SURE",
+                title="Combined Layout",
                 yaxis2=dict(overlaying="y", side="right"),
             )
         )
@@ -546,6 +559,7 @@ def get_test_data_set(data_set_name: str = None)-> (pd.DataFrame, List[str], str
 
 
 def main():
+
     # Getting DF, predictors, and response 
     df, predictors, response = get_test_data_set()
     
@@ -558,15 +572,18 @@ def main():
     # split predictor columns into respective groups
     # and response variable category
     continuous, categorical, boolean = object.checkColIsContOrCat()
-
+    print("continuous: \n", continuous,
+        "categorical: \n", categorical,
+        "boolean: \n", boolean)
     # Getting response type
     response_VarGroup = object.get_col_type(response)
 
     # plotting continuous predictors with response
     # Also grabbing pvalues and tvalues from continuous responses 
-
     stats_values = []
     for cont_pred in continuous:
+        if continuous is None:
+            continue
         if response_VarGroup == "continuous":
             test = Cat_vs_Cont(cont_pred, 
             response= response, 
@@ -576,7 +593,8 @@ def main():
         
         elif response_VarGroup == "categorical":
             test = Cat_vs_Cont(
-            cont_pred,response= response, 
+            cont_pred,
+            response= response, 
             df=df, 
             predictors=predictors).contResponse_vs_catPredictor()
         
@@ -589,37 +607,50 @@ def main():
                 predictors=predictors).BoolResponse_vs_ContPredictor()
             stats_values.append(test)
         else:
+            print(cont_pred, response_VarGroup)
             raise TypeError("invalid input...by me")
     
     # Plotting categorical predictors with response
     for cat_pred in categorical:
+        if categorical is None: 
+            continue
         if response_VarGroup == "continuous":
             test = Cat_vs_Cont(categorical=cat_pred, 
             response= response, 
             df=df, 
             predictors=predictors).contResponse_vs_catPredictor()
         
-        elif response_VarGroup == "categorical":
+        elif response_VarGroup in ("categorical", "boolean"):
             test = Cat_vs_Cont(categorical=cat_pred,
             response= response, 
             df=df, 
             predictors=predictors).catResponse_vs_catPredictor()
         
         else:
-            raise AttributeError(f"{response} is not being plotted correctly, issue with class?")
+            print(cat_pred, response_VarGroup)
+            raise AttributeError("Something is not being plotted correctly, issue with class?")
 
-
-    '''
     # RF regressor, obtaining feature importance
-    machineLearning = RF_importance(continuous)
-    feature_ranking = machineLearning.RF_regressor()
-
+    if response_VarGroup == 'continuous':
+        machineLearning = RF_importance(response= response, 
+                                        df=df, 
+                                        predictors=continuous,
+                                        regressor=1)
+        feature_ranking = machineLearning.RF_rank()
+    elif response_VarGroup == 'boolean':
+        machineLearning = RF_importance(response= response, 
+                            df=df, 
+                            predictors=continuous,
+                            regressor=0)
+        feature_ranking = machineLearning.RF_rank()
+    else: pass
+    
     # combining regression statistics with RF feature importance
     stats_df = pd.DataFrame(stats_values)
     stats_df.columns=['Feature', 't-val', 'p-val']
     stats_df['Feature_Importance'] = np.array(feature_ranking['Feature_Importance']).tolist()
     print(stats_df)
-    '''
+    
     return
 
 
