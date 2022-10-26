@@ -123,33 +123,33 @@ class Cat_vs_Cont(read_data):
         self.continuous = continuous
         self.boolean = boolean
 
-    def catResponse_vs_contPredictor(self):
+    def contResponse_vs_catPredictor(self):
         fig_2 = go.Figure()
         fig_2.add_trace(
             go.Violin(
-                x=self.df[self.response],
-                y=self.df[self.continuous],
-                name=f"{self.df[self.response].name} vs {self.df[self.continuous].name}",
+                x=self.df[self.categorical],
+                y=self.df[self.response],
+                name=f"{self.df[self.categorical].name} vs {self.df[self.response].name}",
                 box_visible=True,
                 meanline_visible=True,
             )
         )
         fig_2.update_layout(
-            title=f"{self.df[self.response].name} vs {self.df[self.continuous].name}",
-            xaxis_title=f"{self.df[self.response].name}",
-            yaxis_title=f"{self.df[self.continuous].name}",
+            title=f"{self.df[self.categorical].name} vs {self.df[self.response].name}",
+            xaxis_title=f"{self.df[self.categorical].name}",
+            yaxis_title=f"{self.df[self.response].name}",
         )
         fig_2.show()
         fig_2.write_html(
-            file=f"ViolinPlots: {self.df[self.continuous].name}",
+            file=f"ViolinPlots: {self.df[self.categorical].name}",
             include_plotlyjs="cdn",
         )
         return
 
-    def contResponse_vs_catPredictor(self):
+    def catResponse_vs_contPredictor(self):
 
-        hist_data = [self.df[self.response]]
-        group_labels = [f"{self.df[self.categorical].name}"]  # name of the dataset
+        hist_data = [self.df[self.continuous]]
+        group_labels = [f"{self.df[self.response]}"]  # name of the dataset
         fig = ff.create_distplot(hist_data, group_labels)
         fig.show()
 
@@ -163,7 +163,7 @@ class Cat_vs_Cont(read_data):
 
         # I am using self.continuous as a place holder for another categorical variaible
         conf_matrix = confusion_matrix(
-            self.df[self.response], self.df[self.categorical]
+            self.df[self.response].astype(str), self.df[self.categorical]
         )
         fig_no_relationship = go.Figure(
             data=go.Heatmap(z=conf_matrix, zmin=0, zmax=conf_matrix.max())
@@ -171,12 +171,12 @@ class Cat_vs_Cont(read_data):
         fig_no_relationship.update_layout(
             title="Categorical Predictor by Categorical Response",
             xaxis_title=f"{self.df[self.response].name}",
-            yaxis_title=f"{self.df[self.continuous].name}",
+            yaxis_title=f"{self.df[self.categorical].name}",
         )
         fig_no_relationship.show()
 
         fig_no_relationship.write_html(
-            file=f"HeatMap: {self.df[self.continuous].name} vs {self.df[self.response].name} ",
+            file=f"HeatMap: {self.df[self.categorical].name} vs {self.df[self.response].name} ",
             include_plotlyjs="cdn",
         )
         return
@@ -353,7 +353,7 @@ class DiffMeanResponse(read_data):
             elif predictor_type == "boolean":
                 bin_size = len(np.unique(predictor_data))
                 predictor_data = predictor_data.astype(int)
-                bin_label = np.unique(df[self.predictors])
+                bin_label = np.unique(predictor_data)
             elif predictor_type == "continuous":
                 bin_size = 9
                 bin_label = np.arange(0,9)
@@ -363,7 +363,7 @@ class DiffMeanResponse(read_data):
             mean_stat = binned_statistic(
                 predictor_data, response_data, statistic="mean", bins=bin_size
             )
-            bin_count, bins_edge = np.histogram(label_fit, bins=bin_size)
+            bin_count, bins_edge = np.histogram(predictor_data, bins=bin_size)
             population_proportion = bin_count / len(df)
             bin_means = mean_stat.statistic
             pop_mean_response = np.mean(response_data)
@@ -375,7 +375,7 @@ class DiffMeanResponse(read_data):
                 pop_mean_response=pop_mean_response,
                 population_proportion=population_proportion,
             )
-            bin_label = np.unique(le.inverse_transform(label_fit))
+            # bin_label = np.unique(le.inverse_transform(label_fit))
 
         elif (
             response_type == "continuous"
@@ -468,7 +468,7 @@ class DiffMeanResponse(read_data):
         )
         fig.update_layout(title=f"Difference w/ Mean Response: {self.pred}")
         fig.update_layout(
-            xaxis_title="Predictor", yaxis_title="Population", yaxis2_title="Response"
+            xaxis_title=f"{self.pred}", yaxis_title="Population", yaxis2_title="Mean of Response"
         )
         fig.update_yaxes(rangemode="tozero")
         fig.update_xaxes(
@@ -574,7 +574,7 @@ def get_test_data_set(data_set_name: str = None)-> (pd.DataFrame, List[str], str
 def main():
 
     # Getting DF, predictors, and response 
-    df, predictors, response = get_test_data_set()
+    df, predictors, response = get_test_data_set('titanic')
     
     # read in object
     object = read_data(response= response, 
@@ -634,13 +634,12 @@ def main():
             df=df, 
             predictors=predictors).contResponse_vs_catPredictor()
         
-        elif response_VarGroup =="categorical":
+        elif response_VarGroup in ("categorical", "boolean"):
             test = Cat_vs_Cont(categorical=cat_pred,
             response= response, 
             df=df, 
             predictors=predictors).catResponse_vs_catPredictor()
-        elif response_VarGroup == "boolean":
-            print("don't care")
+
         else:
             print(cat_pred, response_VarGroup)
             raise AttributeError("Something is not being plotted correctly, issue with class?")
