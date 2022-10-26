@@ -361,7 +361,7 @@ class DiffMeanResponse(read_data):
                 raise TypeError("No Category Matches predictor")
             
             mean_stat = binned_statistic(
-                label_fit, response_data, statistic="mean", bins=bin_size
+                predictor_data, response_data, statistic="mean", bins=bin_size
             )
             bin_count, bins_edge = np.histogram(label_fit, bins=bin_size)
             population_proportion = bin_count / len(df)
@@ -389,7 +389,7 @@ class DiffMeanResponse(read_data):
             elif predictor_type == "boolean":
                 bin_size = len(np.unique(predictor_data))
                 predictor_data = predictor_data.astype(int)
-                bin_label = np.unique(df[self.predictors])
+                bin_label = np.unique(predictor_data)
             elif predictor_type == "continuous":
                 bin_size = 9
                 bin_label = np.arange(0,9)
@@ -666,8 +666,7 @@ def main():
     stats_df = pd.DataFrame(stats_values)
     stats_df.columns=['Feature', 't-val', 'p-val']
     stats_df['Feature_Importance'] = np.array(feature_ranking['Feature_Importance']).tolist()
-    print(stats_df)
-    
+
     # plotting the mean of response stuff
     for pred in predictors:
         print(pred)
@@ -677,7 +676,6 @@ def main():
         MeanResponseDF = responseMean.Mean_Squared_DF()
         print(MeanResponseDF)
         MeanPlots = responseMean.plot_Mean_diff()
-
 
     return
 
