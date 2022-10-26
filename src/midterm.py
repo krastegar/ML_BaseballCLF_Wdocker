@@ -4,6 +4,7 @@ import random
 import sys
 from typing import List  # might not need this
 
+import itertools
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -12,7 +13,7 @@ from plotly import express as px
 from plotly import figure_factory as ff
 from plotly import graph_objects as go
 from plotly.io import to_html
-from scipy.stats import binned_statistic
+from scipy.stats import binned_statistic, pearsonr
 from sklearn import datasets
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import confusion_matrix
@@ -104,7 +105,6 @@ class read_data:
             raise TypeError("Unknown Input")
 
         return group_resp
-
 
 class Cat_vs_Cont(read_data):
     """
@@ -241,6 +241,7 @@ class Cat_vs_Cont(read_data):
         )
 
         return df[self.continuous].name, t_value, p_value
+
 
 
 class RF_importance(read_data):
@@ -477,6 +478,61 @@ class DiffMeanResponse(read_data):
         fig.show()
         return
 
+class Correlation(read_data):
+    '''
+    Determining correlation of PREDICTORS only
+    ***Predictors of all categories. 
+    '''
+    def __init__(self, a=None, b=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.a = a # these are column titles...just fyi
+        self.b = b
+
+    def get_df(self):
+        
+        df = self.ChangeBinaryToBool()
+        df_a, df_b = df[self.a], df[self.b]
+        return df_a, df_b
+
+    def cont_cont_Corr(self):
+        'Remember to set a condition for a for loop....if a==b: pass'
+        
+        df_a, df_b = self.get_df()
+        rval, pval= pearsonr(df_a, df_b)
+
+        return self.a, self.b, rval, pval
+    
+    def cat_cont_correlation_ratio(self, categories, values):
+        """
+        Correlation Ratio: https://en.wikipedia.org/wiki/Correlation_ratio
+        SOURCE:
+        1.) https://towardsdatascience.com/the-search-for-categorical-correlation-a1cf7f1888c9
+        :param categories: Numpy array of categories
+        :param values: Numpy array of values
+        :return: correlation
+        """
+        f_cat, _ = pd.factorize(categories)
+        cat_num = np.max(f_cat) + 1
+        y_avg_array = np.zeros(cat_num)
+        n_array = np.zeros(cat_num)
+        for i in range(0, cat_num):
+            cat_measures = (values[(np.argwhere(f_cat == i).flatten())])
+            n_array[i] = len(cat_measures)
+            y_avg_array[i] = np.average(cat_measures)
+        y_total_avg = np.sum(np.multiply(y_avg_array, n_array)) / np.sum(n_array)
+        numerator = np.sum(
+            np.multiply(
+                n_array, np.power(np.subtract(y_avg_array, y_total_avg), 2)
+            )
+        )
+        denominator = np.sum(np.power(np.subtract(values, y_total_avg), 2))
+        if numerator == 0:
+            eta = 0.0
+        else:
+            eta = np.sqrt(numerator / denominator)
+        return self.b, self.a, eta
+    
+
 
 def get_test_data_set(data_set_name: str = None)-> (pd.DataFrame, List[str], str):
     """Function to load a few test data sets
@@ -570,12 +626,22 @@ def get_test_data_set(data_set_name: str = None)-> (pd.DataFrame, List[str], str
     print(f"Data set selected: {data_set_name}")
     return data_set, predictors, response
 
+def check_list(list1, list2):
+    '''
+    if list are none_type, will return empty string
+    Used for calling all my methods even if list is empty
+    '''
+    if list1 == None: 
+        list1 = ['']
+    elif list2 == None: 
+        list2 =  ['']
+    return list1, list2
+
 
 def main():
 
     # Getting DF, predictors, and response 
-    df, predictors, response = get_test_data_set('titanic')
-    
+    df, predictors, response = get_test_data_set('boston')
     # read in object
     object = read_data(response= response, 
                         df=df, 
@@ -585,13 +651,52 @@ def main():
     # split predictor columns into respective groups
     # and response variable category
     continuous, categorical, boolean = object.checkColIsContOrCat()
+    '''
     print("continuous: \n", continuous,
-        "categorical: \n", categorical,
-        "boolean: \n", boolean)
+        "\ncategorical: \n", categorical,
+        "\nboolean: \n", boolean)
+    '''
     # Getting response type
     response_VarGroup = object.get_col_type(response)
     print("Response Type: ", response, response_VarGroup)
 
+    # ----- getting Predictor correlation values -------
+    
+    # using reverse list of correlation
+    reversed_cont = sorted(continuous, reverse=True)
+    
+    # checking lists if they are empty
+    continuous, reversed_cont = check_list(continuous, reversed_cont)
+
+    # getting corr stats for Continuous vs Continuous
+    contVScont_stats = []
+    for tupl in itertools.product(continuous, reversed_cont):
+            corr_object = Correlation(response=response, 
+                                    df = df, 
+                                    a=tupl[0], 
+                                    b=tupl[1]).cont_cont_Corr()
+            contVScont_stats.append(corr_object)
+    #print(contVScont_stats) # Works!
+
+    # Categorical vs Cont correlation statistics
+    catVScont_stats = []
+    continuous, categorical = check_list(continuous, categorical)
+        # itertools product gives you every combination of 
+        # list elements  
+    for tupl in itertools.product(continuous, categorical):
+        corr_object = Correlation(response=response, 
+                                df = df,
+                                a=tupl[0], 
+                                b=tupl[1]
+                                ).cat_cont_correlation_ratio(df[tupl[1]],df[tupl[0]])
+                                # needs to be in (b,a)
+        catVScont_stats.append(corr_object)
+    # print(catVScont_stats) Works!
+    
+
+
+    
+    '''
     # plotting continuous predictors with response
     # Also grabbing pvalues and tvalues from continuous responses 
     stats_values = []
@@ -675,6 +780,9 @@ def main():
         MeanResponseDF = responseMean.Mean_Squared_DF()
         print(MeanResponseDF)
         MeanPlots = responseMean.plot_Mean_diff()
+        '''
+
+
 
     return
 
