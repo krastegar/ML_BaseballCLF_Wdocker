@@ -292,9 +292,9 @@ class RF_importance(read_data):
 
 
 class DiffMeanResponse(read_data):
-    def __init__(self, predictor, *args, **kwargs):
+    def __init__(self, pred_input, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.predictors = predictor
+        self.pred = pred_input
 
     def bin_params(self, bins_edge):
         bin_lower, bin_upper, bin_center = [], [], []
@@ -335,24 +335,35 @@ class DiffMeanResponse(read_data):
 
         # Getting response type
         response_type = self.get_col_type(self.response)
-        predictor_type = self.get_col_type(self.predictors)
+        predictor_type = self.get_col_type(self.pred)
         print(predictor_type)
 
         # Predictor and response Data
-        predictor_data, response_data = df[self.predictors], df[self.response]
+        predictor_data, response_data = df[self.pred], df[self.response]
 
         # --------------FOUND A WAY TO DO MEAN OF RESPONSE ------------------------------
         # This first condition only deals with categorical predictors not categorical response
         if response_type == "boolean":
-
-            # if cat use label encoder to make bins
-            unique_len = len(np.unique(predictor_data))
-            le = LabelEncoder()
-            label_fit = le.fit_transform(predictor_data)
+            if predictor_type == "categorical":
+                le = LabelEncoder()
+                label_fit = le.fit_transform(predictor_data)
+                predictor_data = label_fit
+                bin_size = len(np.unique(predictor_data))
+                bin_label = np.unique(le.inverse_transform(label_fit))
+            elif predictor_type == "boolean":
+                bin_size = len(np.unique(predictor_data))
+                predictor_data = predictor_data.astype(int)
+                bin_label = np.unique(df[self.predictors])
+            elif predictor_type == "continuous":
+                bin_size = 9
+                bin_label = np.arange(0,9)
+            else:
+                raise TypeError("No Category Matches predictor")
+            
             mean_stat = binned_statistic(
-                label_fit, response_data, statistic="mean", bins=unique_len
+                label_fit, response_data, statistic="mean", bins=bin_size
             )
-            bin_count, bins_edge = np.histogram(label_fit, bins=unique_len)
+            bin_count, bins_edge = np.histogram(label_fit, bins=bin_size)
             population_proportion = bin_count / len(df)
             bin_means = mean_stat.statistic
             pop_mean_response = np.mean(response_data)
@@ -368,17 +379,20 @@ class DiffMeanResponse(read_data):
 
         elif (
             response_type == "continuous"
-        ):  # this breaks when response type is continuous and predictor is boolean?
+        ): 
             if predictor_type == "categorical":
                 le = LabelEncoder()
                 label_fit = le.fit_transform(predictor_data)
                 predictor_data = label_fit
                 bin_size = len(np.unique(predictor_data))
+                bin_label = np.unique(le.inverse_transform(label_fit))
             elif predictor_type == "boolean":
                 bin_size = len(np.unique(predictor_data))
                 predictor_data = predictor_data.astype(int)
+                bin_label = np.unique(df[self.predictors])
             elif predictor_type == "continuous":
                 bin_size = 9
+                bin_label = np.arange(0,9)
             else:
                 raise TypeError("No Category Matches predictor")
 
@@ -396,7 +410,6 @@ class DiffMeanResponse(read_data):
                 pop_mean_response=pop_mean_response,
                 population_proportion=population_proportion,
             )
-            bin_label = np.unique(df[self.predictors])
 
         else:
             raise TypeError("Response needs to be continuous or boolean")
@@ -453,7 +466,7 @@ class DiffMeanResponse(read_data):
                 yaxis="y2",
             )
         )
-        fig.update_layout(title=f"Difference w/ Mean Response: {self.predictors}")
+        fig.update_layout(title=f"Difference w/ Mean Response: {self.pred}")
         fig.update_layout(
             xaxis_title="Predictor", yaxis_title="Population", yaxis2_title="Response"
         )
@@ -577,6 +590,7 @@ def main():
         "boolean: \n", boolean)
     # Getting response type
     response_VarGroup = object.get_col_type(response)
+    print("Response Type: ", response, response_VarGroup)
 
     # plotting continuous predictors with response
     # Also grabbing pvalues and tvalues from continuous responses 
@@ -590,7 +604,7 @@ def main():
             df=df, 
             predictors=predictors).contResponse_vs_contPredictor()
             stats_values.append(test)
-        
+
         elif response_VarGroup == "categorical":
             test = Cat_vs_Cont(
             cont_pred,
@@ -620,12 +634,13 @@ def main():
             df=df, 
             predictors=predictors).contResponse_vs_catPredictor()
         
-        elif response_VarGroup in ("categorical", "boolean"):
+        elif response_VarGroup =="categorical":
             test = Cat_vs_Cont(categorical=cat_pred,
             response= response, 
             df=df, 
             predictors=predictors).catResponse_vs_catPredictor()
-        
+        elif response_VarGroup == "boolean":
+            print("don't care")
         else:
             print(cat_pred, response_VarGroup)
             raise AttributeError("Something is not being plotted correctly, issue with class?")
@@ -643,7 +658,9 @@ def main():
                             predictors=continuous,
                             regressor=0)
         feature_ranking = machineLearning.RF_rank()
-    else: pass
+    else:
+        print(response, response_VarGroup)
+        raise AttributeError("Only accounting for boolean and Continuous response variables")
     
     # combining regression statistics with RF feature importance
     stats_df = pd.DataFrame(stats_values)
@@ -651,6 +668,17 @@ def main():
     stats_df['Feature_Importance'] = np.array(feature_ranking['Feature_Importance']).tolist()
     print(stats_df)
     
+    # plotting the mean of response stuff
+    for pred in predictors:
+        print(pred)
+        responseMean = DiffMeanResponse(response= response, 
+                        df=df,
+                        pred_input=pred)
+        MeanResponseDF = responseMean.Mean_Squared_DF()
+        print(MeanResponseDF)
+        MeanPlots = responseMean.plot_Mean_diff()
+
+
     return
 
 
