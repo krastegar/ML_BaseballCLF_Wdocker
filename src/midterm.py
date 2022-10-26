@@ -566,52 +566,48 @@ def main():
     # Also grabbing pvalues and tvalues from continuous responses 
 
     stats_values = []
-    if continuous is not None:
-        for cont_pred in continuous:
-            if response_VarGroup == "continuous":
-                test = Cat_vs_Cont(cont_pred, 
+    for cont_pred in continuous:
+        if response_VarGroup == "continuous":
+            test = Cat_vs_Cont(cont_pred, 
+            response= response, 
+            df=df, 
+            predictors=predictors).contResponse_vs_contPredictor()
+            stats_values.append(test)
+        
+        elif response_VarGroup == "categorical":
+            test = Cat_vs_Cont(
+            cont_pred,response= response, 
+            df=df, 
+            predictors=predictors).contResponse_vs_catPredictor()
+        
+        elif response_VarGroup == "boolean":
+            test = Cat_vs_Cont(
+                continuous=cont_pred, 
+                boolean=response, 
                 response= response, 
                 df=df, 
-                predictors=predictors).contResponse_vs_contPredictor()
-                stats_values.append(test)
-            
-            elif response_VarGroup == "categorical":
-                test = Cat_vs_Cont(
-                cont_pred,response= response, 
-                df=df, 
-                predictors=predictors).contResponse_vs_catPredictor()
-            
-            elif response_VarGroup == "boolean":
-                test = Cat_vs_Cont(
-                    continuous=cont_pred, 
-                    boolean=response, 
-                    response= response, 
-                    df=df, 
-                    predictors=predictors).BoolResponse_vs_ContPredictor()
-                stats_values.append(test)
-            else:
-                raise TypeError("invalid input...by me")
+                predictors=predictors).BoolResponse_vs_ContPredictor()
+            stats_values.append(test)
+        else:
+            raise TypeError("invalid input...by me")
     
-    elif categorical is not None:
     # Plotting categorical predictors with response
-        for cat_pred in categorical:
-            if response_VarGroup == "continuous":
-                test = Cat_vs_Cont(categorical=cat_pred, 
-                response= response, 
-                df=df, 
-                predictors=predictors).contResponse_vs_catPredictor()
-            
-            elif response_VarGroup == "categorical":
-                test = Cat_vs_Cont(categorical=cat_pred,
-                response= response, 
-                df=df, 
-                predictors=predictors).catResponse_vs_catPredictor()
-            
-            else:
-                raise AttributeError(f"{response} is not being plotted correctly, issue with class?")
-    else:
-        pass
-    
+    for cat_pred in categorical:
+        if response_VarGroup == "continuous":
+            test = Cat_vs_Cont(categorical=cat_pred, 
+            response= response, 
+            df=df, 
+            predictors=predictors).contResponse_vs_catPredictor()
+        
+        elif response_VarGroup == "categorical":
+            test = Cat_vs_Cont(categorical=cat_pred,
+            response= response, 
+            df=df, 
+            predictors=predictors).catResponse_vs_catPredictor()
+        
+        else:
+            raise AttributeError(f"{response} is not being plotted correctly, issue with class?")
+
 
     '''
     # RF regressor, obtaining feature importance
