@@ -641,7 +641,7 @@ def check_list(list1, list2):
 def main():
 
     # Getting DF, predictors, and response 
-    df, predictors, response = get_test_data_set('boston')
+    df, predictors, response = get_test_data_set()
     # read in object
     object = read_data(response= response, 
                         df=df, 
@@ -651,11 +651,11 @@ def main():
     # split predictor columns into respective groups
     # and response variable category
     continuous, categorical, boolean = object.checkColIsContOrCat()
-    '''
+ 
     print("continuous: \n", continuous,
         "\ncategorical: \n", categorical,
         "\nboolean: \n", boolean)
-    '''
+
     # Getting response type
     response_VarGroup = object.get_col_type(response)
     print("Response Type: ", response, response_VarGroup)
@@ -684,14 +684,17 @@ def main():
         # itertools product gives you every combination of 
         # list elements  
     for tupl in itertools.product(continuous, categorical):
+        print(tupl)
         corr_object = Correlation(response=response, 
                                 df = df,
                                 a=tupl[0], 
                                 b=tupl[1]
-                                ).cat_cont_correlation_ratio(df[tupl[1]],df[tupl[0]])
+                                ).cat_cont_correlation_ratio(df[tupl[1]].reset_index(drop=True),
+                                df[tupl[0]].reset_index(drop=True))
                                 # needs to be in (b,a)
         catVScont_stats.append(corr_object)
-    # print(catVScont_stats) Works!
+    # reset_index is necessary to make sure index don't get messed up in calculations
+    print(catVScont_stats)
     
 
 
