@@ -1,11 +1,11 @@
-from argparse import ArgumentError
-from nis import cat
+import itertools
 import random
 import sys
-from typing import List  # might not need this
 import warnings
+from argparse import ArgumentError
+from nis import cat
+from typing import List  # might not need this
 
-import itertools
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -14,21 +14,16 @@ from plotly import express as px
 from plotly import figure_factory as ff
 from plotly import graph_objects as go
 from plotly.io import to_html
-from scipy.stats import binned_statistic, pearsonr,chi2_contingency
+from scipy.stats import binned_statistic, chi2_contingency, pearsonr
 from sklearn import datasets
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
 
 class read_data:
-    def __init__(
-        self,
-        response,
-        df,
-        predictors=None
-    ):
+    def __init__(self, response, df, predictors=None):
         self.response = response
         self.df = pd.DataFrame(df)
         self.predictors = predictors
@@ -44,7 +39,12 @@ class read_data:
             if len(unique) == 2:
                 if unique[0] == 0 and unique[1] == 1:
                     self.df[col] = self.df[col].astype(bool)
-                elif unique[0] in ('n','N','no','No') and unique[1] in ('y','Y', 'yes', 'Yes'):
+                elif unique[0] in ("n", "N", "no", "No") and unique[1] in (
+                    "y",
+                    "Y",
+                    "yes",
+                    "Yes",
+                ):
                     self.df[col] = self.df[col].map({unique[1]: 1, unique[0]: 0})
                     self.df[col] = self.df[col].astype(bool)
                 else:
@@ -68,11 +68,13 @@ class read_data:
         # Looping through each column and determing conditions
         # to put columns into respective groups
         list_of_columns = list(df.columns)
-        for index, column in enumerate(list_of_columns): #df.columns is a list of columns
+        for index, column in enumerate(
+            list_of_columns
+        ):  # df.columns is a list of columns
             data_type = df[column]
             col_name = self.columns[index]
             if data_type.dtype != "bool":
-                if data_type.dtype in ["float64","int64"]:
+                if data_type.dtype in ["float64", "int64"]:
                     cont_array.append(col_name)
                     # print(col_name, " Continuous")
                     continue
@@ -81,7 +83,9 @@ class read_data:
                     # print(col_name, " Not Continuous or Bool")
                     continue
                 else:  # Raise Error for unknown data types
-                    raise TypeError("Error in column classification: Unknown column dtype")
+                    raise TypeError(
+                        "Error in column classification: Unknown column dtype"
+                    )
                     # print(col_name, data_type.dtype)
             else:
                 bool_array.append(col_name)
@@ -107,6 +111,7 @@ class read_data:
 
         return group_resp
 
+
 class Cat_vs_Cont(read_data):
     """
     This object is meant to plot all the types of Data such as:
@@ -114,11 +119,13 @@ class Cat_vs_Cont(read_data):
     Categorical Response vs Continuous Predictor ....etc
     It also takes the p-values of each continuous variable.
 
-    This Class is mean to be used in a for loop against individual predictors 
+    This Class is mean to be used in a for loop against individual predictors
     and response
     """
 
-    def __init__(self, continuous=None, categorical=None, boolean=None, *args, **kwargs):
+    def __init__(
+        self, continuous=None, categorical=None, boolean=None, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.categorical = categorical
         self.continuous = continuous
@@ -215,7 +222,7 @@ class Cat_vs_Cont(read_data):
         df = self.ChangeBinaryToBool()
         bool_col = df[self.response]
         # bool col is only 1's....logistic regression will break
-        # The way I fixed it was using map function in ChangeBinaryToBool 
+        # The way I fixed it was using map function in ChangeBinaryToBool
         y = bool_col
         column = df[self.continuous]
         predictor1 = statsmodels.api.add_constant(column)
@@ -228,7 +235,9 @@ class Cat_vs_Cont(read_data):
 
         # plotting (such a bitch to figure out) ---- how the f did i figure this out
         # the problem is with the y variable, it is in True/False, needed to change it to 0/1
-        fig = px.scatter(x=self.df[self.continuous], y=df[self.response].astype(int), trendline="ols")
+        fig = px.scatter(
+            x=self.df[self.continuous], y=df[self.response].astype(int), trendline="ols"
+        )
         fig.update_layout(
             title=f"Variable: {df[self.continuous].name}: (t-value={t_value}) (p-value={p_value})",
             xaxis_title=f"{df[self.continuous].name}",
@@ -244,7 +253,6 @@ class Cat_vs_Cont(read_data):
         return df[self.continuous].name, t_value, p_value
 
 
-
 class RF_importance(read_data):
     """
     here I am going to require user to input list of names for  each category
@@ -252,7 +260,15 @@ class RF_importance(read_data):
         i.e)list of continuous columns, categorical columns, ....etc
     """
 
-    def __init__(self, regressor = 1,continuous=None, categorical=None, boolean=None, *args, **kwargs):
+    def __init__(
+        self,
+        regressor=1,
+        continuous=None,
+        categorical=None,
+        boolean=None,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.continuous = continuous
         self.categorical = categorical
@@ -274,21 +290,25 @@ class RF_importance(read_data):
         )
 
         # fit regressor model
-        if self.regressor ==  1:
+        if self.regressor == 1:
             RandForest_regressor = RandomForestRegressor(max_depth=4, random_state=42)
             RF_clf = RandForest_regressor.fit(X_train, y_train)
             df_feature_importance = pd.DataFrame(
-                RF_clf.feature_importances_, index=X.columns, columns=["Feature_Importance"]
+                RF_clf.feature_importances_,
+                index=X.columns,
+                columns=["Feature_Importance"],
             ).sort_values("Feature_Importance", ascending=False)
         elif self.regressor == 0:
             RandForest_regressor = RandomForestRegressor(max_depth=4, random_state=42)
             RF_clf = RandForest_regressor.fit(X_train, y_train)
             df_feature_importance = pd.DataFrame(
-                RF_clf.feature_importances_, index=X.columns, columns=["Feature_Importance"]
+                RF_clf.feature_importances_,
+                index=X.columns,
+                columns=["Feature_Importance"],
             ).sort_values("Feature_Importance", ascending=False)
-        
-        else: raise ArgumentError("Invalid option inputted")
 
+        else:
+            raise ArgumentError("Invalid option inputted")
 
         return df_feature_importance
 
@@ -328,10 +348,10 @@ class DiffMeanResponse(read_data):
         return mean_square_diff, weighted_square_diff
 
     def Mean_Squared_DF(self):
-        '''
-        Mean of Response calculations and plots. This class is to be used in 
-        a for loop with individual response and columns 
-        '''
+        """
+        Mean of Response calculations and plots. This class is to be used in
+        a for loop with individual response and columns
+        """
         # Reading in df
         df = self.ChangeBinaryToBool()
 
@@ -358,10 +378,10 @@ class DiffMeanResponse(read_data):
                 bin_label = np.unique(predictor_data)
             elif predictor_type == "continuous":
                 bin_size = 9
-                bin_label = np.arange(0,9)
+                bin_label = np.arange(0, 9)
             else:
                 raise TypeError("No Category Matches predictor")
-            
+
             mean_stat = binned_statistic(
                 predictor_data, response_data, statistic="mean", bins=bin_size
             )
@@ -379,9 +399,7 @@ class DiffMeanResponse(read_data):
             )
             # bin_label = np.unique(le.inverse_transform(label_fit))
 
-        elif (
-            response_type == "continuous"
-        ): 
+        elif response_type == "continuous":
             if predictor_type == "categorical":
                 le = LabelEncoder()
                 label_fit = le.fit_transform(predictor_data)
@@ -394,7 +412,7 @@ class DiffMeanResponse(read_data):
                 bin_label = np.unique(predictor_data)
             elif predictor_type == "continuous":
                 bin_size = 9
-                bin_label = np.arange(0,9)
+                bin_label = np.arange(0, 9)
             else:
                 raise TypeError("No Category Matches predictor")
 
@@ -470,7 +488,9 @@ class DiffMeanResponse(read_data):
         )
         fig.update_layout(title=f"Difference w/ Mean Response: {self.pred}")
         fig.update_layout(
-            xaxis_title=f"{self.pred}", yaxis_title="Population", yaxis2_title="Mean of Response"
+            xaxis_title=f"{self.pred}",
+            yaxis_title="Population",
+            yaxis2_title="Mean of Response",
         )
         fig.update_yaxes(rangemode="tozero")
         fig.update_xaxes(
@@ -479,30 +499,32 @@ class DiffMeanResponse(read_data):
         fig.show()
         return
 
+
 class Correlation(read_data):
-    '''
+    """
     Determining correlation of PREDICTORS only
-    ***Predictors of all categories. 
-    '''
+    ***Predictors of all categories.
+    """
+
     def __init__(self, a=None, b=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.a = a # these are column titles...just fyi
+        self.a = a  # these are column titles...just fyi
         self.b = b
 
     def get_df(self):
-        
+
         df = self.ChangeBinaryToBool()
         df_a, df_b = df[self.a], df[self.b]
         return df_a, df_b
 
     def cont_cont_Corr(self):
-        'Remember to set a condition for a for loop....if a==b: pass'
-        
+        "Remember to set a condition for a for loop....if a==b: pass"
+
         df_a, df_b = self.get_df()
-        rval, _ = pearsonr(df_a, df_b) # gets rid of unwanted variable
+        rval, _ = pearsonr(df_a, df_b)  # gets rid of unwanted variable
 
         return self.a, self.b, rval
-    
+
     def cat_cont_correlation_ratio(self, categories, values):
         """
         Correlation Ratio: https://en.wikipedia.org/wiki/Correlation_ratio
@@ -517,14 +539,12 @@ class Correlation(read_data):
         y_avg_array = np.zeros(cat_num)
         n_array = np.zeros(cat_num)
         for i in range(0, cat_num):
-            cat_measures = (values[(np.argwhere(f_cat == i).flatten())])
+            cat_measures = values[(np.argwhere(f_cat == i).flatten())]
             n_array[i] = len(cat_measures)
             y_avg_array[i] = np.average(cat_measures)
         y_total_avg = np.sum(np.multiply(y_avg_array, n_array)) / np.sum(n_array)
         numerator = np.sum(
-            np.multiply(
-                n_array, np.power(np.subtract(y_avg_array, y_total_avg), 2)
-            )
+            np.multiply(n_array, np.power(np.subtract(y_avg_array, y_total_avg), 2))
         )
         denominator = np.sum(np.power(np.subtract(values, y_total_avg), 2))
         if numerator == 0:
@@ -532,13 +552,12 @@ class Correlation(read_data):
         else:
             eta = np.sqrt(numerator / denominator)
         return self.b, self.a, eta
-    
+
     def fill_na(self, data):
         if isinstance(data, pd.Series):
             return data.fillna(0)
         else:
             return np.array([value if value is not None else 0 for value in data])
-
 
     def cat_correlation(self, x, y, bias_correction=True, tschuprow=False):
         """
@@ -582,15 +601,15 @@ class Correlation(read_data):
                 if crosstab_matrix.shape == (2, 2):
                     yates_correct = False
 
-            chi2, _, _, _ = chi2_contingency(
-                crosstab_matrix, correction=yates_correct
-            )
+            chi2, _, _, _ = chi2_contingency(crosstab_matrix, correction=yates_correct)
             phi2 = chi2 / n_observations
 
             # r and c are number of categories of x and y
             r, c = crosstab_matrix.shape
             if bias_correction:
-                phi2_corrected = max(0, phi2 - ((r - 1) * (c - 1)) / (n_observations - 1))
+                phi2_corrected = max(
+                    0, phi2 - ((r - 1) * (c - 1)) / (n_observations - 1)
+                )
                 r_corrected = r - ((r - 1) ** 2) / (n_observations - 1)
                 c_corrected = c - ((c - 1) ** 2) / (n_observations - 1)
                 if tschuprow:
@@ -601,7 +620,7 @@ class Correlation(read_data):
                 corr_coeff = np.sqrt(
                     phi2_corrected / min((r_corrected - 1), (c_corrected - 1))
                 )
-                return self.a,self.b, corr_coeff
+                return self.a, self.b, corr_coeff
             if tschuprow:
                 corr_coeff = np.sqrt(phi2 / np.sqrt((r - 1) * (c - 1)))
                 return self.a, self.b, corr_coeff
@@ -614,10 +633,63 @@ class Correlation(read_data):
             else:
                 warnings.warn("Error calculating Cramer's V", RuntimeWarning)
             return self.a, self.b, corr_coeff
-    
+
+    def cont_vs_cont_matrix(self):
+        """
+        corr vals is an array of all the correlation values computed in the
+        previous correlation anaylsis
+        """
+        cont_array, _, _ = self.checkColIsContOrCat()
+        df = self.ChangeBinaryToBool()
+        cont_matrix = df[cont_array].corr(method="pearson")
+
+        fig = px.imshow(cont_matrix)
+
+        fig.update_layout(title="Correlation Matrix: Continuous / Continuous ")
+        fig.show()
+
+        fig.write_html(
+            file=f"Correlation Matrix: Continuous vs Continuous ",
+            include_plotlyjs="cdn",
+        )
+        return
+
+    def cat_vs_cont_matrix(self, corr_matrix):
+        cat_contDF = corr_matrix.pivot_table(
+            values="Corr Coef",
+            index="Continuous",
+            columns="Categorical",
+            aggfunc="first",
+        )
+        fig = px.imshow(cat_contDF)
+
+        fig.update_layout(title="Correlation Matrix: Categorical / Continuous ")
+        fig.write_html(
+            file=f"Correlation Matrix: Categorical vs Continuous ",
+            include_plotlyjs="cdn",
+        )
+        fig.show()
+        return
+
+    def cat_vs_cat_matrix(self, corr_matrix):
+        cat_catDF = corr_matrix.pivot_table(
+            values="Corr Coef",
+            index="Categorical 1",
+            columns="Categorical 2",
+            aggfunc="first",
+        )
+        fig = px.imshow(cat_catDF)
+
+        fig.update_layout(title="Correlation Matrix: Categorical / Categorical ")
+        fig.write_html(
+            file=f"Correlation Matrix: Categorical vs Categorical ",
+            include_plotlyjs="cdn",
+        )
+        fig.show()
+        return
 
 
-def get_test_data_set(data_set_name: str = None)-> (pd.DataFrame, List[str], str):
+def get_test_data_set(data_set_name: str = None) -> (pd.DataFrame, List[str], str):
     """Function to load a few test data sets
 
     :param:
@@ -709,179 +781,192 @@ def get_test_data_set(data_set_name: str = None)-> (pd.DataFrame, List[str], str
     print(f"Data set selected: {data_set_name}")
     return data_set, predictors, response
 
+
 def check_list(list1, list2):
-    '''
+    """
     if list are none_type, will return empty string
     Used for calling all my methods even if list is empty
-    '''
-    if list1 == None: 
-        list1 = ['']
-    elif list2 == None: 
-        list2 =  ['']
+    """
+    if list1 == None:
+        list1 = [""]
+    elif list2 == None:
+        list2 = [""]
     return list1, list2
 
 
 def main():
 
-    # Getting DF, predictors, and response 
+    # Getting DF, predictors, and response
     df, predictors, response = get_test_data_set()
     # read in object
-    object = read_data(response= response, 
-                        df=df, 
-                        predictors=predictors)
+    object = read_data(response=response, df=df, predictors=predictors)
     object.dataframe()
 
     # split predictor columns into respective groups
     # and response variable category
     continuous, categorical, boolean = object.checkColIsContOrCat()
- 
-    print("continuous: \n", continuous,
-        "\ncategorical: \n", categorical,
-        "\nboolean: \n", boolean)
+
+    print(
+        "continuous: \n",
+        continuous,
+        "\ncategorical: \n",
+        categorical,
+        "\nboolean: \n",
+        boolean,
+    )
 
     # Getting response type
     response_VarGroup = object.get_col_type(response)
     print("Response Type: ", response, response_VarGroup)
 
     # plotting continuous predictors with response
-    # Also grabbing pvalues and tvalues from continuous responses 
+    # Also grabbing pvalues and tvalues from continuous responses
     stats_values = []
     for cont_pred in continuous:
         if continuous is None:
             continue
         if response_VarGroup == "continuous":
-            test = Cat_vs_Cont(cont_pred, 
-            response= response, 
-            df=df, 
-            predictors=predictors).contResponse_vs_contPredictor()
+            test = Cat_vs_Cont(
+                cont_pred, response=response, df=df, predictors=predictors
+            ).contResponse_vs_contPredictor()
             stats_values.append(test)
 
         elif response_VarGroup == "categorical":
             test = Cat_vs_Cont(
-            cont_pred,
-            response= response, 
-            df=df, 
-            predictors=predictors).contResponse_vs_catPredictor()
-        
+                cont_pred, response=response, df=df, predictors=predictors
+            ).contResponse_vs_catPredictor()
+
         elif response_VarGroup == "boolean":
             test = Cat_vs_Cont(
-                continuous=cont_pred, 
-                boolean=response, 
-                response= response, 
-                df=df, 
-                predictors=predictors).BoolResponse_vs_ContPredictor()
+                continuous=cont_pred,
+                boolean=response,
+                response=response,
+                df=df,
+                predictors=predictors,
+            ).BoolResponse_vs_ContPredictor()
             stats_values.append(test)
         else:
             print(cont_pred, response_VarGroup)
             raise TypeError("invalid input...by me")
-    
+
     # Plotting categorical predictors with response
     for cat_pred in categorical:
-        if categorical is None: 
+        if categorical is None:
             continue
         if response_VarGroup == "continuous":
-            test = Cat_vs_Cont(categorical=cat_pred, 
-            response= response, 
-            df=df, 
-            predictors=predictors).contResponse_vs_catPredictor()
-        
+            test = Cat_vs_Cont(
+                categorical=cat_pred, response=response, df=df, predictors=predictors
+            ).contResponse_vs_catPredictor()
+
         elif response_VarGroup in ("categorical", "boolean"):
-            test = Cat_vs_Cont(categorical=cat_pred,
-            response= response, 
-            df=df, 
-            predictors=predictors).catResponse_vs_catPredictor()
+            test = Cat_vs_Cont(
+                categorical=cat_pred, response=response, df=df, predictors=predictors
+            ).catResponse_vs_catPredictor()
 
         else:
             print(cat_pred, response_VarGroup)
-            raise AttributeError("Something is not being plotted correctly, issue with class?")
+            raise AttributeError(
+                "Something is not being plotted correctly, issue with class?"
+            )
 
     # RF regressor, obtaining feature importance
-    if response_VarGroup == 'continuous':
-        machineLearning = RF_importance(response= response, 
-                                        df=df, 
-                                        predictors=continuous,
-                                        regressor=1)
+    if response_VarGroup == "continuous":
+        machineLearning = RF_importance(
+            response=response, df=df, predictors=continuous, regressor=1
+        )
         feature_ranking = machineLearning.RF_rank()
-    elif response_VarGroup == 'boolean':
-        machineLearning = RF_importance(response= response, 
-                            df=df, 
-                            predictors=continuous,
-                            regressor=0)
+    elif response_VarGroup == "boolean":
+        machineLearning = RF_importance(
+            response=response, df=df, predictors=continuous, regressor=0
+        )
         feature_ranking = machineLearning.RF_rank()
     else:
         print(response, response_VarGroup)
-        raise AttributeError("Only accounting for boolean and Continuous response variables")
-    
+        raise AttributeError(
+            "Only accounting for boolean and Continuous response variables"
+        )
+
     # combining regression statistics with RF feature importance
     stats_df = pd.DataFrame(stats_values)
-    stats_df.columns=['Feature', 't-val', 'p-val']
-    stats_df['Feature_Importance'] = np.array(feature_ranking['Feature_Importance']).tolist()
+    stats_df.columns = ["Feature", "t-val", "p-val"]
+    stats_df["Feature_Importance"] = np.array(
+        feature_ranking["Feature_Importance"]
+    ).tolist()
 
     # plotting the mean of response stuff
     for pred in predictors:
         print(pred)
-        responseMean = DiffMeanResponse(response= response, 
-                        df=df,
-                        pred_input=pred)
+        responseMean = DiffMeanResponse(response=response, df=df, pred_input=pred)
         MeanResponseDF = responseMean.Mean_Squared_DF()
         print(MeanResponseDF)
         MeanPlots = responseMean.plot_Mean_diff()
-   # ----- getting Predictor correlation values -------
-    
+
+    # ----- getting Predictor correlation values -------
+
     # using reverse list of correlation
     reversed_cont = sorted(continuous, reverse=True)
-    
+
     # checking lists if they are empty
     continuous, reversed_cont = check_list(continuous, reversed_cont)
 
     # getting corr stats for Continuous vs Continuous
     contVScont_stats = []
     for tupl in itertools.product(continuous, reversed_cont):
-            corr_object = Correlation(response=response, 
-                                    df = df, 
-                                    a=tupl[0], 
-                                    b=tupl[1]).cont_cont_Corr()
-            contVScont_stats.append(corr_object)
-    cont_corrDF = pd.DataFrame(contVScont_stats, columns=['Contin 1', 'Contin 2', 'Corr Coef']
-                            ).sort_values('Corr Coef', ascending=False)
-    print(cont_corrDF) # Works!
+        corr_object = Correlation(
+            response=response, df=df, a=tupl[0], b=tupl[1]
+        ).cont_cont_Corr()
+        contVScont_stats.append(corr_object)
+    cont_corrDF = pd.DataFrame(
+        contVScont_stats, columns=["Contin 1", "Contin 2", "Corr Coef"]
+    ).sort_values("Corr Coef", ascending=False)
+    print(cont_corrDF)
+
+    ContContMatrix = Correlation(response=response, df=df).cont_vs_cont_matrix()
 
     # Categorical vs Cont correlation statistics
     catVScont_stats = []
     continuous, categorical = check_list(continuous, categorical)
-        # itertools product gives you every combination of 
-        # list elements  
-    for tupl in itertools.product(continuous, categorical): # tupl is a tuple hence tupl[0], tupl[1]
-        corr_object = Correlation(response=response, 
-                                df = df,
-                                a=tupl[0], 
-                                b=tupl[1]
-                                ).cat_cont_correlation_ratio(df[tupl[1]].reset_index(drop=True),
-                                df[tupl[0]].reset_index(drop=True))
-                                # needs to be in (b,a)
+    # itertools product gives you every combination of
+    # list elements
+    for tupl in itertools.product(
+        continuous, categorical
+    ):  # tupl is a tuple hence tupl[0], tupl[1]
+        corr_object = Correlation(
+            response=response, df=df, a=tupl[0], b=tupl[1]
+        ).cat_cont_correlation_ratio(
+            df[tupl[1]].reset_index(drop=True), df[tupl[0]].reset_index(drop=True)
+        )
+        # needs to be in (b,a)
         catVScont_stats.append(corr_object)
     # reset_index is necessary to make sure index don't get messed up in calculations
-    cat_contDF = pd.DataFrame(catVScont_stats, columns=['Categorical', 'Continuous', 'Corr Coef']
-                            ).sort_values('Corr Coef', ascending=False)
+    cat_contDF = pd.DataFrame(
+        catVScont_stats, columns=["Categorical", "Continuous", "Corr Coef"]
+    ).sort_values("Corr Coef", ascending=False)
     print(cat_contDF)
-    
-    # Categorical vs Categorical predictor correlation values. 
+
+    cat_cont_matrixPlot = Correlation(df=df, response=response).cat_vs_cont_matrix(
+        cat_contDF
+    )
+
+    # Categorical vs Categorical predictor correlation values.
     catVScat_stats = []
     reverse_cat = sorted(categorical, reverse=True)
     categorical, categorical = check_list(categorical, reverse_cat)
-    for tupl in itertools.product(categorical, reverse_cat): # tupl is a tuple hence tupl[0], tupl[1]
-        corr_object = Correlation(response=response, 
-                                df = df,
-                                a=tupl[0], 
-                                b=tupl[1]
-                                ).cat_correlation(df[tupl[1]].reset_index(drop=True),
-                                df[tupl[0]].reset_index(drop=True))
-                                # needs to be in (b,a)
+    for tupl in itertools.product(
+        categorical, reverse_cat
+    ):  # tupl is a tuple hence tupl[0], tupl[1]
+        corr_object = Correlation(
+            response=response, df=df, a=tupl[0], b=tupl[1]
+        ).cat_correlation(
+            df[tupl[1]].reset_index(drop=True), df[tupl[0]].reset_index(drop=True)
+        )
+        # needs to be in (b,a)
         catVScat_stats.append(corr_object)
-    cat_corrDF = pd.DataFrame(catVScat_stats, columns=['Categorical 1', 'Categorical 2', 'Corr Coef']
-                ).sort_values('Corr Coef', ascending=False)
+    cat_corrDF = pd.DataFrame(
+        catVScat_stats, columns=["Categorical 1", "Categorical 2", "Corr Coef"]
+    ).sort_values("Corr Coef", ascending=False)
     print(cat_corrDF)
-
+    cat_corrPlots = Correlation(df=df, response=response).cat_vs_cat_matrix(cat_corrDF)
 
     return
 
