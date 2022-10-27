@@ -3,6 +3,7 @@ from nis import cat
 import random
 import sys
 from typing import List  # might not need this
+import warnings
 
 import itertools
 import numpy as np
@@ -13,7 +14,7 @@ from plotly import express as px
 from plotly import figure_factory as ff
 from plotly import graph_objects as go
 from plotly.io import to_html
-from scipy.stats import binned_statistic, pearsonr
+from scipy.stats import binned_statistic, pearsonr,chi2_contingency
 from sklearn import datasets
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import confusion_matrix
@@ -498,9 +499,9 @@ class Correlation(read_data):
         'Remember to set a condition for a for loop....if a==b: pass'
         
         df_a, df_b = self.get_df()
-        rval, pval= pearsonr(df_a, df_b)
+        rval, _ = pearsonr(df_a, df_b) # gets rid of unwanted variable
 
-        return self.a, self.b, rval, pval
+        return self.a, self.b, rval
     
     def cat_cont_correlation_ratio(self, categories, values):
         """
@@ -531,6 +532,88 @@ class Correlation(read_data):
         else:
             eta = np.sqrt(numerator / denominator)
         return self.b, self.a, eta
+    
+    def fill_na(self, data):
+        if isinstance(data, pd.Series):
+            return data.fillna(0)
+        else:
+            return np.array([value if value is not None else 0 for value in data])
+
+
+    def cat_correlation(self, x, y, bias_correction=True, tschuprow=False):
+        """
+        Calculates correlation statistic for categorical-categorical association.
+        The two measures supported are:
+        1. Cramer'V ( default )
+        2. Tschuprow'T
+
+        SOURCES:
+        1.) CODE: https://github.com/MavericksDS/pycorr
+        2.) Used logic from:
+            https://stackoverflow.com/questions/20892799/using-pandas-calculate-cram%C3%A9rs-coefficient-matrix
+            to ignore yates correction factor on 2x2
+        3.) Haven't validated Tschuprow
+
+        Bias correction and formula's taken from : https://www.researchgate.net/publication/270277061_A_bias-correction_for_Cramer's_V_and_Tschuprow's_T
+
+        Wikipedia for Cramer's V: https://en.wikipedia.org/wiki/Cram%C3%A9r%27s_V
+        Wikipedia for Tschuprow' T: https://en.wikipedia.org/wiki/Tschuprow%27s_T
+        Parameters:
+        -----------
+        x : list / ndarray / Pandas Series
+            A sequence of categorical measurements
+        y : list / NumPy ndarray / Pandas Series
+            A sequence of categorical measurements
+        bias_correction : Boolean, default = True
+        tschuprow : Boolean, default = False
+                For choosing Tschuprow as measure
+        Returns:
+        --------
+        float in the range of [0,1]
+        """
+        corr_coeff = np.nan
+        try:
+            x, y = self.fill_na(x), self.fill_na(y)
+            crosstab_matrix = pd.crosstab(x, y)
+            n_observations = crosstab_matrix.sum().sum()
+
+            yates_correct = True
+            if bias_correction:
+                if crosstab_matrix.shape == (2, 2):
+                    yates_correct = False
+
+            chi2, _, _, _ = chi2_contingency(
+                crosstab_matrix, correction=yates_correct
+            )
+            phi2 = chi2 / n_observations
+
+            # r and c are number of categories of x and y
+            r, c = crosstab_matrix.shape
+            if bias_correction:
+                phi2_corrected = max(0, phi2 - ((r - 1) * (c - 1)) / (n_observations - 1))
+                r_corrected = r - ((r - 1) ** 2) / (n_observations - 1)
+                c_corrected = c - ((c - 1) ** 2) / (n_observations - 1)
+                if tschuprow:
+                    corr_coeff = np.sqrt(
+                        phi2_corrected / np.sqrt((r_corrected - 1) * (c_corrected - 1))
+                    )
+                    return self.a, self.b, corr_coeff
+                corr_coeff = np.sqrt(
+                    phi2_corrected / min((r_corrected - 1), (c_corrected - 1))
+                )
+                return self.a,self.b, corr_coeff
+            if tschuprow:
+                corr_coeff = np.sqrt(phi2 / np.sqrt((r - 1) * (c - 1)))
+                return self.a, self.b, corr_coeff
+            corr_coeff = np.sqrt(phi2 / min((r - 1), (c - 1)))
+            return self.a, self.b, corr_coeff
+        except Exception as ex:
+            print(ex)
+            if tschuprow:
+                warnings.warn("Error calculating Tschuprow's T", RuntimeWarning)
+            else:
+                warnings.warn("Error calculating Cramer's V", RuntimeWarning)
+            return self.a, self.b, corr_coeff
     
 
 
@@ -660,46 +743,6 @@ def main():
     response_VarGroup = object.get_col_type(response)
     print("Response Type: ", response, response_VarGroup)
 
-    # ----- getting Predictor correlation values -------
-    
-    # using reverse list of correlation
-    reversed_cont = sorted(continuous, reverse=True)
-    
-    # checking lists if they are empty
-    continuous, reversed_cont = check_list(continuous, reversed_cont)
-
-    # getting corr stats for Continuous vs Continuous
-    contVScont_stats = []
-    for tupl in itertools.product(continuous, reversed_cont):
-            corr_object = Correlation(response=response, 
-                                    df = df, 
-                                    a=tupl[0], 
-                                    b=tupl[1]).cont_cont_Corr()
-            contVScont_stats.append(corr_object)
-    #print(contVScont_stats) # Works!
-
-    # Categorical vs Cont correlation statistics
-    catVScont_stats = []
-    continuous, categorical = check_list(continuous, categorical)
-        # itertools product gives you every combination of 
-        # list elements  
-    for tupl in itertools.product(continuous, categorical):
-        print(tupl)
-        corr_object = Correlation(response=response, 
-                                df = df,
-                                a=tupl[0], 
-                                b=tupl[1]
-                                ).cat_cont_correlation_ratio(df[tupl[1]].reset_index(drop=True),
-                                df[tupl[0]].reset_index(drop=True))
-                                # needs to be in (b,a)
-        catVScont_stats.append(corr_object)
-    # reset_index is necessary to make sure index don't get messed up in calculations
-    print(catVScont_stats)
-    
-
-
-    
-    '''
     # plotting continuous predictors with response
     # Also grabbing pvalues and tvalues from continuous responses 
     stats_values = []
@@ -783,8 +826,61 @@ def main():
         MeanResponseDF = responseMean.Mean_Squared_DF()
         print(MeanResponseDF)
         MeanPlots = responseMean.plot_Mean_diff()
-        '''
+   # ----- getting Predictor correlation values -------
+    
+    # using reverse list of correlation
+    reversed_cont = sorted(continuous, reverse=True)
+    
+    # checking lists if they are empty
+    continuous, reversed_cont = check_list(continuous, reversed_cont)
 
+    # getting corr stats for Continuous vs Continuous
+    contVScont_stats = []
+    for tupl in itertools.product(continuous, reversed_cont):
+            corr_object = Correlation(response=response, 
+                                    df = df, 
+                                    a=tupl[0], 
+                                    b=tupl[1]).cont_cont_Corr()
+            contVScont_stats.append(corr_object)
+    cont_corrDF = pd.DataFrame(contVScont_stats, columns=['Contin 1', 'Contin 2', 'Corr Coef']
+                            ).sort_values('Corr Coef', ascending=False)
+    print(cont_corrDF) # Works!
+
+    # Categorical vs Cont correlation statistics
+    catVScont_stats = []
+    continuous, categorical = check_list(continuous, categorical)
+        # itertools product gives you every combination of 
+        # list elements  
+    for tupl in itertools.product(continuous, categorical): # tupl is a tuple hence tupl[0], tupl[1]
+        corr_object = Correlation(response=response, 
+                                df = df,
+                                a=tupl[0], 
+                                b=tupl[1]
+                                ).cat_cont_correlation_ratio(df[tupl[1]].reset_index(drop=True),
+                                df[tupl[0]].reset_index(drop=True))
+                                # needs to be in (b,a)
+        catVScont_stats.append(corr_object)
+    # reset_index is necessary to make sure index don't get messed up in calculations
+    cat_contDF = pd.DataFrame(catVScont_stats, columns=['Categorical', 'Continuous', 'Corr Coef']
+                            ).sort_values('Corr Coef', ascending=False)
+    print(cat_contDF)
+    
+    # Categorical vs Categorical predictor correlation values. 
+    catVScat_stats = []
+    reverse_cat = sorted(categorical, reverse=True)
+    categorical, categorical = check_list(categorical, reverse_cat)
+    for tupl in itertools.product(categorical, reverse_cat): # tupl is a tuple hence tupl[0], tupl[1]
+        corr_object = Correlation(response=response, 
+                                df = df,
+                                a=tupl[0], 
+                                b=tupl[1]
+                                ).cat_correlation(df[tupl[1]].reset_index(drop=True),
+                                df[tupl[0]].reset_index(drop=True))
+                                # needs to be in (b,a)
+        catVScat_stats.append(corr_object)
+    cat_corrDF = pd.DataFrame(catVScat_stats, columns=['Categorical 1', 'Categorical 2', 'Corr Coef']
+                ).sort_values('Corr Coef', ascending=False)
+    print(cat_corrDF)
 
 
     return
