@@ -14,7 +14,7 @@ from plotly import express as px
 from plotly import figure_factory as ff
 from plotly import graph_objects as go
 from plotly.io import to_html
-from scipy.stats import binned_statistic, chi2_contingency, pearsonr
+from scipy.stats import binned_statistic, chi2_contingency, pearsonr, binned_statistic_2d
 from sklearn import datasets
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import confusion_matrix
@@ -299,7 +299,7 @@ class RF_importance(read_data):
                 columns=["Feature_Importance"],
             ).sort_values("Feature_Importance", ascending=False)
         elif self.regressor == 0:
-            RandForest_regressor = RandomForestRegressor(max_depth=4, random_state=42)
+            RandForest_regressor = RandomForestClassifier(max_depth=4, random_state=42)
             RF_clf = RandForest_regressor.fit(X_train, y_train)
             df_feature_importance = pd.DataFrame(
                 RF_clf.feature_importances_,
@@ -314,7 +314,7 @@ class RF_importance(read_data):
 
 
 class DiffMeanResponse(read_data):
-    def __init__(self, pred_input, *args, **kwargs):
+    def __init__(self, pred_input = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.pred = pred_input
 
@@ -499,6 +499,103 @@ class DiffMeanResponse(read_data):
         fig.show()
         return
 
+class BruteForce(DiffMeanResponse):
+    def __init__(self, pred_input_1,pred_input_2,*args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pred1 = pred_input_1
+        self.pred2 = pred_input_2
+   
+    def cat_pred_bin(self, predictor_data):
+        
+        le = LabelEncoder()
+        label_fit = le.fit_transform(predictor_data)
+        predictor_data = label_fit
+        bin_size = len(np.unique(predictor_data))
+        bin_label = np.unique(le.inverse_transform(label_fit))
+        
+        return predictor_data, bin_size, bin_label
+
+    def brute_force_2d(self):
+        
+        # Reading in df
+        df = self.ChangeBinaryToBool()
+
+        # Getting response type
+        # print("Response: ",self.response)
+        response_type = self.get_col_type(self.response)
+        # print("\nResponse Type: ", response_type)
+        # print("\npredictor 1: ", self.pred1)
+        pred1_type = self.get_col_type(self.pred1)
+        print("\npredictor 1 type: ", pred1_type)
+        # print('\n predictor 2: ', self.pred2)
+        pred2_type = self.get_col_type(self.pred2)
+        print("\npredictor 2 type: ", pred2_type)
+        # Predictor and response Data
+        pred1_data, pred2_data, response_data = df[self.pred1], df[self.pred2],df[self.response]
+
+        # Conditions for predictors
+        if pred1_type == 'continuous' and pred2_type == 'continuous':
+            bin_size = 10
+            bin_label = np.arange(0,9)
+            brute_stats = binned_statistic_2d(pred1_data, pred2_data, response_data,
+                                            statistic = 'mean', bins=bin_size)
+        
+        elif pred1_type in ("categorical", "boolean") and pred2_type == 'continuous':
+            pred1_data, bin_size, bin_label= self.cat_pred_bin(pred1_data)
+            brute_stats = binned_statistic_2d(pred1_data, pred2_data, response_data,
+                                            statistic = 'mean', bins=bin_size)                
+
+        elif pred1_type == "continuous" and pred2_type in ('categorical', 'boolean'):
+            pred2_data,  bin_size, bin_label= self.cat_pred_bin(pred2_data)
+            brute_stats = binned_statistic_2d(pred1_data, pred2_data, response_data,
+                                            statistic = 'mean', bins=bin_size)
+
+        elif pred1_type == 'categorical' and pred2_type == 'categorical':
+            # need to find a way to choose between bin_sizes 
+            # just gonna use the larger one of the two
+            pred1_data, bin_size, bin_label = self.cat_pred_bin(pred1_data)
+            pred2_data, bin_size, bin_label = self.cat_pred_bin(pred2_data)
+
+            brute_stats = binned_statistic_2d(pred1_data, pred2_data, response_data,
+                                            statistic = 'mean', bins=bin_size) # just using pred 2 bin_size (for now)
+
+        else: 
+            raise ArgumentError("Not the correct Predictor Type for BruteForce Method")
+        
+
+        pop_mean_response = np.mean(response_data)
+
+        bin_counts, x_edge, y_edge = np.histogram2d(pred1_data, pred2_data, bins=bin_size)
+        #bin_area = bin_counts.flatten() # this is giving me the total sample size of each bin
+        matrix_area = len(x_edge) * len(y_edge) # area of entire nxn matrix (based on # of bins)
+        bin_means = brute_stats.statistic.flatten()
+        bin_means_noNan = np.nan_to_num(bin_means) # switching nan to 0's
+        population_proportion = bin_means_noNan/matrix_area
+        
+        # replacing nan with 0 in bin_means
+        
+        mean_square_diff, weighted_diff = self.squared_diffs(
+                bins_edge=bin_means,
+                bin_means=bin_means_noNan,
+                pop_mean_response=pop_mean_response,
+                population_proportion=population_proportion,
+            )
+        
+        print("bin_means: \n", bin_means_noNan, 
+              "\npopulation_proportion: \n", population_proportion)
+        '''
+        print(
+        "BinMeans", len(bin_means), '\n'
+        "PopulationProportion", len(population_proportion), '\n',
+        "MeanSquaredDiff", len(mean_square_diff), '\n',
+        "MeanSquaredDiffWeighted", len(weighted_diff))
+        '''
+        
+
+        
+        
+                            
+        return self.pred1, self.pred2, mean_square_diff, weighted_diff
 
 class Correlation(read_data):
     """
@@ -814,6 +911,7 @@ def main():
         "\nboolean: \n",
         boolean,
     )
+    '''
 
     # Getting response type
     response_VarGroup = object.get_col_type(response)
@@ -893,7 +991,8 @@ def main():
         feature_ranking["Feature_Importance"]
     ).tolist()
 
-    # plotting the mean of response stuff
+    print(stats_df)
+    # ------ plotting the mean of response stuff --------- 
     for pred in predictors:
         print(pred)
         responseMean = DiffMeanResponse(response=response, df=df, pred_input=pred)
@@ -921,8 +1020,6 @@ def main():
     ).sort_values("Corr Coef", ascending=False)
     print(cont_corrDF)
 
-    ContContMatrix = Correlation(response=response, df=df).cont_vs_cont_matrix()
-
     # Categorical vs Cont correlation statistics
     catVScont_stats = []
     continuous, categorical = check_list(continuous, categorical)
@@ -944,10 +1041,6 @@ def main():
     ).sort_values("Corr Coef", ascending=False)
     print(cat_contDF)
 
-    cat_cont_matrixPlot = Correlation(df=df, response=response).cat_vs_cont_matrix(
-        cat_contDF
-    )
-
     # Categorical vs Categorical predictor correlation values.
     catVScat_stats = []
     reverse_cat = sorted(categorical, reverse=True)
@@ -966,7 +1059,26 @@ def main():
         catVScat_stats, columns=["Categorical 1", "Categorical 2", "Corr Coef"]
     ).sort_values("Corr Coef", ascending=False)
     print(cat_corrDF)
+    
+    # ---- Plotting Correlation Matrix ---------
+    ContContMatrix = Correlation(response=response, df=df).cont_vs_cont_matrix()
+    cat_cont_matrixPlot = Correlation(df=df, response=response).cat_vs_cont_matrix(
+        cat_contDF
+    )
     cat_corrPlots = Correlation(df=df, response=response).cat_vs_cat_matrix(cat_corrDF)
+    '''
+
+    # ----- Calculating Brute Force --------
+    cont_cat_bruteforce = []
+    for tupl in itertools.product(
+        continuous, categorical
+    ):
+        BF = BruteForce(df=df, response=response, pred_input_1=tupl[0], pred_input_2=tupl[1]
+                    ).brute_force_2d()
+        pred1, pred2, mean_square_diff, weighted_diff = BF
+        mean_unweighted, mean_weighted = np.mean(mean_square_diff), np.mean(weighted_diff)
+        cont_cat_bruteforce.append((pred1,pred2,mean_unweighted, mean_weighted ))
+
 
     return
 
