@@ -500,10 +500,10 @@ class DiffMeanResponse(read_data):
         return
 
 class BruteForce(DiffMeanResponse):
-    def __init__(self, pred_input_1,pred_input_2,*args, **kwargs):
+    def __init__(self, list1,list2,*args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.pred1 = pred_input_1
-        self.pred2 = pred_input_2
+        self.list1 = list1
+        self.list2 = list2
    
     def cat_pred_bin(self, predictor_data):
         
@@ -515,7 +515,7 @@ class BruteForce(DiffMeanResponse):
         
         return predictor_data, bin_size, bin_label
 
-    def brute_force_2d(self):
+    def brute_force_2d(self, pred1, pred2):
         
         # Reading in df
         df = self.ChangeBinaryToBool()
@@ -525,13 +525,13 @@ class BruteForce(DiffMeanResponse):
         response_type = self.get_col_type(self.response)
         # print("\nResponse Type: ", response_type)
         # print("\npredictor 1: ", self.pred1)
-        pred1_type = self.get_col_type(self.pred1)
-        print("\npredictor 1 type: ", pred1_type)
+        pred1_type = self.get_col_type(pred1)
+        #print("\npredictor 1 type: ", pred1_type)
         # print('\n predictor 2: ', self.pred2)
-        pred2_type = self.get_col_type(self.pred2)
-        print("\npredictor 2 type: ", pred2_type)
+        pred2_type = self.get_col_type(pred2)
+        #print("\npredictor 2 type: ", pred2_type)
         # Predictor and response Data
-        pred1_data, pred2_data, response_data = df[self.pred1], df[self.pred2],df[self.response]
+        pred1_data, pred2_data, response_data = df[pred1], df[pred2],df[self.response]
 
         # Conditions for predictors
         if pred1_type == 'continuous' and pred2_type == 'continuous':
@@ -581,21 +581,22 @@ class BruteForce(DiffMeanResponse):
                 population_proportion=population_proportion,
             )
         
-        print("bin_means: \n", bin_means_noNan, 
-              "\npopulation_proportion: \n", population_proportion)
-        '''
-        print(
-        "BinMeans", len(bin_means), '\n'
-        "PopulationProportion", len(population_proportion), '\n',
-        "MeanSquaredDiff", len(mean_square_diff), '\n',
-        "MeanSquaredDiffWeighted", len(weighted_diff))
-        '''
-        
-
-        
         
                             
-        return self.pred1, self.pred2, mean_square_diff, weighted_diff
+        return pred1, pred2, mean_square_diff, weighted_diff
+    
+    def BF_df(self):
+        cont_cat_bruteforce = []
+        for tupl in itertools.product(
+            self.list1, self.list2
+        ):
+            BruF = self.brute_force_2d(pred1=tupl[0], pred2=tupl[1])
+            pred1, pred2, mean_square_diff, weighted_diff = BruF
+            mean_unweighted, mean_weighted = np.mean(mean_square_diff), np.mean(weighted_diff)
+            cont_cat_bruteforce.append((pred1,pred2,mean_unweighted, mean_weighted ))
+        BF_cont_cat_df = pd.DataFrame(cont_cat_bruteforce, columns=['Pred 1', 'Pred 2', 'Unweighted', 'Weighted'])
+
+        return BF_cont_cat_df.sort_values('Weighted', ascending=False)
 
 class Correlation(read_data):
     """
@@ -1069,16 +1070,27 @@ def main():
     '''
 
     # ----- Calculating Brute Force --------
-    cont_cat_bruteforce = []
-    for tupl in itertools.product(
-        continuous, categorical
-    ):
-        BF = BruteForce(df=df, response=response, pred_input_1=tupl[0], pred_input_2=tupl[1]
-                    ).brute_force_2d()
-        pred1, pred2, mean_square_diff, weighted_diff = BF
-        mean_unweighted, mean_weighted = np.mean(mean_square_diff), np.mean(weighted_diff)
-        cont_cat_bruteforce.append((pred1,pred2,mean_unweighted, mean_weighted ))
+    
+    # BruteForce Cont/ Cat:
+    cont_cat_brutDF = BruteForce(df = df, 
+                                response=response, 
+                                list1=categorical, 
+                                list2=continuous).BF_df()
+    # print('BruteForce Cont/ Cat: \n',cont_cat_brutDF)
 
+    # BruteForce Cat / Cat: 
+    cat_cat_brutDF = BruteForce(df = df, 
+                            response=response, 
+                            list1=categorical, 
+                            list2=categorical).BF_df()
+    # print(cat_cat_brutDF)
+
+    # BruteForce Cont / Cont: 
+    cont_cont_brutDF = BruteForce(df = df, 
+                        response=response, 
+                        list1=continuous, 
+                        list2=continuous).BF_df()
+    print(cont_cont_brutDF)
 
     return
 
