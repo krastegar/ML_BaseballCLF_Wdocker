@@ -5,16 +5,17 @@ import sys
 import warnings
 from argparse import ArgumentError
 from nis import cat
-from typing import List  # might not need this
+from typing import List  
 
 import numpy as np
 import pandas as pd
+import pathlib
 import seaborn as sns
 import statsmodels.api
+import plotly.io as io
 from plotly import express as px
 from plotly import figure_factory as ff
 from plotly import graph_objects as go
-from plotly.io import to_html
 from scipy.stats import binned_statistic, chi2_contingency, pearsonr, binned_statistic_2d
 from sklearn import datasets
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -148,7 +149,7 @@ class Cat_vs_Cont(read_data):
             xaxis_title=f"{self.df[self.categorical].name}",
             yaxis_title=f"{self.df[self.response].name}",
         )
-        fig_2.show()
+        # fig_2.show()
         fig_2.write_html(
             file=f"ViolinPlots: {self.df[self.categorical].name}",
             include_plotlyjs="cdn",
@@ -160,10 +161,10 @@ class Cat_vs_Cont(read_data):
         hist_data = [self.df[self.continuous]]
         group_labels = [f"{self.df[self.response]}"]  # name of the dataset
         fig = ff.create_distplot(hist_data, group_labels)
-        fig.show()
+        # fig.show()
 
         fig.write_html(
-            file=f"ViolinPlots pt 2: {self.df[self.response].name}",
+            file=f"HistData: Predictor = {self.continuous} Response={self.response}",
             include_plotlyjs="cdn",
         )
         return
@@ -182,13 +183,17 @@ class Cat_vs_Cont(read_data):
             xaxis_title=f"{self.df[self.response].name}",
             yaxis_title=f"{self.df[self.categorical].name}",
         )
-        fig_no_relationship.show()
-
+        # fig_no_relationship.show()
+        '''
         fig_no_relationship.write_html(
             file=f"HeatMap: {self.df[self.categorical].name} vs {self.df[self.response].name} ",
             include_plotlyjs="cdn",
         )
-        return
+        '''
+        return fig_no_relationship.write_html(
+            file=f"HeatMap: {self.df[self.categorical].name} vs {self.df[self.response].name} ",
+            include_plotlyjs="cdn",
+        )
 
     def contResponse_vs_contPredictor(self):
 
@@ -206,13 +211,13 @@ class Cat_vs_Cont(read_data):
             x=self.df[self.continuous], y=self.df[self.response], trendline="ols"
         )
         fig.update_layout(
-            title=f"Variable: {self.df[self.continuous].name}: (t-value={t_value}) (p-value={p_value})",
-            xaxis_title=f"{self.df[self.continuous].name}",
-            yaxis_title=f"{self.df[self.response].name}",
+            title=f"Variable: {self.continuous}: (t-value={t_value}) (p-value={p_value})",
+            xaxis_title=f"{self.continuous}",
+            yaxis_title=f"{self.response}",
         )
-        fig.show()
+        # fig.show()
         fig.write_html(
-            file=f"Linear_regression: {self.df[self.continuous].name}",
+            file=f"Linear Regression: {self.continuous}",
             include_plotlyjs="cdn",
         )
         return self.df[self.continuous].name, t_value, p_value
@@ -244,7 +249,7 @@ class Cat_vs_Cont(read_data):
             xaxis_title=f"{df[self.continuous].name}",
             yaxis_title=f"{df[self.response].name}",
         )
-        fig.show()
+        # fig.show()
 
         fig.write_html(
             file=f"Logistic_regression: {df[self.continuous].name}",
@@ -359,7 +364,6 @@ class DiffMeanResponse(read_data):
         # Getting response type
         response_type = self.get_col_type(self.response)
         predictor_type = self.get_col_type(self.pred)
-        print(predictor_type)
 
         # Predictor and response Data
         predictor_data, response_data = df[self.pred], df[self.response]
@@ -476,7 +480,7 @@ class DiffMeanResponse(read_data):
                 name="Pop-Mean",
                 x=mean_diff_df["BinCenters"],
                 y=mean_diff_df["PopulationMean"],
-                yaxis="y2",
+                yaxis="2ndYaxis",
             )
         )
         fig.add_trace(
@@ -484,7 +488,7 @@ class DiffMeanResponse(read_data):
                 name="Squared diff",
                 x=mean_diff_df["BinCenters"],
                 y=mean_diff_df["BinMeans"],
-                yaxis="y2",
+                yaxis="2ndYaxis",
             )
         )
         fig.update_layout(title=f"Difference w/ Mean Response: {self.pred}")
@@ -497,8 +501,13 @@ class DiffMeanResponse(read_data):
         fig.update_xaxes(
             tickvals=mean_diff_df["BinCenters"], ticktext=mean_diff_df["Bin"]
         )
-        fig.show()
-        return
+  
+        
+        # fig.show()
+        return fig.write_html(
+            file=f"Mean of Response: response = {self.response} vs {self.pred}.html",
+            include_plotlyjs="cdn",
+        )
 
 
 
@@ -648,13 +657,13 @@ class Correlation(read_data):
         fig = px.imshow(cont_matrix)
 
         fig.update_layout(title="Correlation Matrix: Continuous / Continuous ")
-        fig.show()
+        #fig.show()
 
         fig.write_html(
             file=f"Correlation Matrix: Continuous vs Continuous ",
             include_plotlyjs="cdn",
         )
-        return
+        return 
 
     def cat_vs_cont_matrix(self, corr_matrix):
         cat_catDF = corr_matrix.pivot_table(
@@ -670,8 +679,9 @@ class Correlation(read_data):
             file=f"Correlation Matrix: Continuous vs Categorical ",
             include_plotlyjs="cdn",
         )
+
         fig.show()
-        return
+        return  
 
     def cat_vs_cat_matrix(self, corr_matrix):
         cat_catDF = corr_matrix.pivot_table(
@@ -687,8 +697,8 @@ class Correlation(read_data):
             file=f"Correlation Matrix: Categorical vs Categorical ",
             include_plotlyjs="cdn",
         )
-        fig.show()
-        return
+        # fig.show()
+        return 
 
 class BruteForce(DiffMeanResponse):
     def __init__(self, list1,list2,*args, **kwargs):
@@ -828,18 +838,23 @@ class BruteForce(DiffMeanResponse):
             file=f"BruteForce {title}: {pred1} vs {pred2}",
             include_plotlyjs="cdn",
         )
-        fig.show() 
-
-        return
+        # fig.show() 
+        file_string = f"BruteForce {title}: {pred1} vs {pred2}"
+        
+        return file_string
 
     def plot_brutforce(self, title):
+        file_names = []
         for tupl in itertools.product(
         self.list1, self.list2
     ): 
+            if tupl[0]==tupl[1]:
+                continue
             brutDF = self.brute_force_2d(pred1=tupl[0], pred2=tupl[1])
             _,_,_,_,bf_df = brutDF
-            cont_cat_brutDF = self.plot_func(bf_df,pred1=tupl[0], pred2=tupl[1], title=title)
-        return
+            cont_cat_brutDF= self.plot_func(bf_df,pred1=tupl[0], pred2=tupl[1], title=title)
+            file_names.append(cont_cat_brutDF)
+        return file_names
 
 def get_test_data_set(data_set_name: str = None) -> (pd.DataFrame, List[str], str):
     """Function to load a few test data sets
@@ -945,11 +960,16 @@ def check_list(list1, list2):
         list2 = [""]
     return list1, list2
 
+def make_clickable(val):
+    # target _blank to open new window
+    return '<a target="_blank" href="{}">{}</a>'.format(val, val)
 
 def main():
+    # getting current working dir
+    cur_dir = pathlib.Path().resolve()
 
     # Getting DF, predictors, and response
-    df, predictors, response = get_test_data_set('tips')
+    df, predictors, response = get_test_data_set('titanic')
     # read in object
     object = read_data(response=response, df=df, predictors=predictors)
     object.dataframe()
@@ -966,15 +986,15 @@ def main():
         "\nboolean: \n",
         boolean,
     )
-    '''
-
+    
+    
     # Getting response type
     response_VarGroup = object.get_col_type(response)
     print("Response Type: ", response, response_VarGroup)
-
+    '''
     # plotting continuous predictors with response
     # Also grabbing pvalues and tvalues from continuous responses
-    stats_values = []
+    stats_values,predictor_type, plot_paths, predictor_name, resp_name, resp_type = [], [], [],[],[], []
     for cont_pred in continuous:
         if continuous is None:
             continue
@@ -983,11 +1003,23 @@ def main():
                 cont_pred, response=response, df=df, predictors=predictors
             ).contResponse_vs_contPredictor()
             stats_values.append(test)
+            file = f"{cur_dir}/Linear Regression: {cont_pred}"
+            predictor_name.append(cont_pred)
+            predictor_type.append("Continuous")
+            plot_paths.append(file)
+            resp_name.append(response)
+            resp_type.append(response_VarGroup)
 
         elif response_VarGroup == "categorical":
             test = Cat_vs_Cont(
                 cont_pred, response=response, df=df, predictors=predictors
-            ).contResponse_vs_catPredictor()
+            ).catResponse_vs_contPredictor()
+            file = f"{cur_dir}/HistData: Predictor = {cont_pred} Response={response}"
+            predictor_name.append(cont_pred)
+            predictor_type.append("Continuous")
+            plot_paths.append(file)
+            resp_name.append(response)
+            resp_type.append(response_VarGroup)
 
         elif response_VarGroup == "boolean":
             test = Cat_vs_Cont(
@@ -997,7 +1029,14 @@ def main():
                 df=df,
                 predictors=predictors,
             ).BoolResponse_vs_ContPredictor()
+            _, tval,pval = test
             stats_values.append(test)
+            file = f"{cur_dir}/Variable: {cont_pred}: (t-value={tval}) (p-value={pval})"
+            predictor_name.append(cont_pred)
+            predictor_type.append("Continuous")
+            plot_paths.append(file)
+            resp_name.append(response)
+            resp_type.append(response_VarGroup)
         else:
             print(cont_pred, response_VarGroup)
             raise TypeError("invalid input...by me")
@@ -1010,17 +1049,39 @@ def main():
             test = Cat_vs_Cont(
                 categorical=cat_pred, response=response, df=df, predictors=predictors
             ).contResponse_vs_catPredictor()
+            file = f"{cur_dir}/ViolinPlots: {cat_pred}",
+            predictor_name.append(cat_pred)
+            predictor_type.append("Categorical")
+            plot_paths.append(file)
+            resp_name.append(response)
+            resp_type.append(response_VarGroup)
 
         elif response_VarGroup in ("categorical", "boolean"):
             test = Cat_vs_Cont(
                 categorical=cat_pred, response=response, df=df, predictors=predictors
             ).catResponse_vs_catPredictor()
-
+            
+            file = f"{cur_dir}/HeatMap: {cat_pred} vs {response} ",
+            predictor_name.append(cat_pred)
+            predictor_type.append("Categorical")
+            plot_paths.append(file)
+            resp_name.append(response)
+            resp_type.append(response_VarGroup)
         else:
             print(cat_pred, response_VarGroup)
             raise AttributeError(
                 "Something is not being plotted correctly, issue with class?"
             )
+
+    HW_4_html_df = pd.DataFrame({
+        "Predictor Type":predictor_type, 
+        "Predictor": predictor_name, 
+        "Response":resp_name, 
+        "Response type": resp_type,
+        "Links to Plots":plot_paths, 
+    })
+    HW_4_html_df = HW_4_html_df.style.format({'Links to Plots': make_clickable})
+    HW_4_html_df.to_html("__HW4_plots.html", escape = 'html')
 
     # RF regressor, obtaining feature importance
     if response_VarGroup == "continuous":
@@ -1045,15 +1106,43 @@ def main():
     stats_df["Feature_Importance"] = np.array(
         feature_ranking["Feature_Importance"]
     ).tolist()
-
-    print(stats_df)
+ 
+    stats_df.to_html("__FeatureRanking.html")
     # ------ plotting the mean of response stuff --------- 
+    weighted_mr, unweighted_mr = [], []
+    bin_table_links, plotly_plot_links = [], []
+    pred_label, response_label = [], []
     for pred in predictors:
-        print(pred)
-        responseMean = DiffMeanResponse(response=response, df=df, pred_input=pred)
-        MeanResponseDF = responseMean.Mean_Squared_DF()
-        print(MeanResponseDF)
-        MeanPlots = responseMean.plot_Mean_diff()
+        mr_df = DiffMeanResponse(response=response, df=df, pred_input=pred
+                        ).Mean_Squared_DF()
+        # print(pred, '\n', MeanResponseDF)
+        mr_df.to_html(f"{pred} MR_table.html")
+        table_path = f"{cur_dir}/{pred} MR_table.html"
+        MeanPlots = DiffMeanResponse(response=response, df=df, pred_input=pred
+                        ).plot_Mean_diff()
+        plot_path = f"{cur_dir}/Mean of Response: response = {response} vs {pred}.html"
+        unweighted_mean = np.mean(mr_df['MeanSquaredDiff'])
+        weighted_mean = np.mean(mr_df['MeanSquaredDiffWeighted'])
+        weighted_mr.append(weighted_mean)
+        unweighted_mr.append(unweighted_mean)
+        bin_table_links.append(table_path)
+        plotly_plot_links.append(plot_path)
+        pred_label.append(pred)
+        response_label.append(response)
+    mr_report_df = pd.DataFrame({"Response": response_label,
+                                "Predictor": pred_label,
+                                "WeightedMeanofResponse" : weighted_mr, 
+                                "UnWeightedMeanOfResponse": unweighted_mr, 
+                                "LinksToBinReport": bin_table_links, 
+                                "LinksToPlots" : plotly_plot_links})
+    mr_report_df=mr_report_df.style.format({'LinksToBinReport': make_clickable,
+                                            "LinksToPlots": make_clickable})
+    mr_report_df.to_html("__MEANofRESPONSE_report.html", escape='html')
+    
+
+    print(cur_dir)
+    '''
+
 
     # ----- getting Predictor correlation values -------
 
@@ -1114,17 +1203,18 @@ def main():
         catVScat_stats, columns=["Categorical 1", "Categorical 2", "Corr Coef"]
     ).sort_values("Corr Coef", ascending=False)
     print(cat_corrDF)
-    
+
     # ---- Plotting Correlation Matrix ---------
     ContContMatrix = Correlation(response=response, df=df).cont_vs_cont_matrix()
     cat_cont_matrixPlot = Correlation(df=df, response=response).cat_vs_cont_matrix(
         cat_contDF
     )
     cat_corrPlots = Correlation(df=df, response=response).cat_vs_cat_matrix(cat_corrDF)
-    '''
+
 
     # ----- Calculating Brute Force --------
-    
+   
+
     # BruteForce Cont/ Cat:
     cont_cat_brutDF = BruteForce(df = df, 
                                 response=response, 
@@ -1137,14 +1227,14 @@ def main():
                             response=response, 
                             list1=categorical, 
                             list2=categorical).BF_df()
-    # print(cat_cat_brutDF)
+    # print('Cat / Cat \n',cat_cat_brutDF)
 
     # BruteForce Cont / Cont: 
     cont_cont_brutDF = BruteForce(df = df, 
                         response=response, 
                         list1=continuous, 
                         list2=continuous).BF_df()
-    # print(cont_cont_brutDF)
+    # print("Cont / Cont \n",cont_cont_brutDF)
 
     # ------ Brute Force Matrix Plots ---------
     # BruteForce Matrix: Cat / Cont
@@ -1153,6 +1243,10 @@ def main():
                                     list1=continuous, 
                                     list2=categorical
                                     ).plot_brutforce("Categorical vs Continuous")
+    cont_cat_brutDF['BF Matrix Plot'] = bf_cont_cat_plots
+    cont_cat_brutDF['BF Matrix Plot'] = f"{cur_dir}/"+cont_cat_brutDF['BF Matrix Plot'].astype(str)
+    cont_cat_brutDF = cont_cat_brutDF.style.format({'BF Matrix Plot': make_clickable})
+    cont_cat_brutDF.to_html("___BF_Cont_Cat_table.html", escape = 'html')
 
     # BruteForce Matrix: Cat / Cat
     bf_cat_cat_plots = BruteForce(df = df, 
@@ -1161,12 +1255,21 @@ def main():
                                 list2=categorical
                                 ).plot_brutforce("Categorical vs Categorical")
     
+    cat_cat_brutDF['BF Matrix Plot'] = bf_cat_cat_plots
+    cat_cat_brutDF['BF Matrix Plot'] = f"{cur_dir}/"+ cat_cat_brutDF['BF Matrix Plot'].astype(str)
+    cat_cat_brutDF = cat_cat_brutDF.style.format({'BF Matrix Plot': make_clickable})
+    cat_cat_brutDF.to_html("___BF_Cat_Cat_table.html", escape = 'html')
+    
     # BruteForce Matrix: Cont / Cont
     bf_cont_cont_plots = BruteForce(df = df, 
                                 response=response, 
                                 list1=continuous, 
                                 list2=continuous
                                 ).plot_brutforce("Continuos vs Continuous")
+    cont_cont_brutDF['BF Matrix Plot'] = bf_cont_cont_plots
+    cont_cont_brutDF['BF Matrix Plot'] = f"{cur_dir}/"+ cont_cont_brutDF['BF Matrix Plot'].astype(str)
+    cont_cont_brutDF = cont_cont_brutDF.style.format({'BF Matrix Plot': make_clickable})
+    cont_cont_brutDF.to_html("___BF_Cont_Cont_table.html", escape = 'html')
 
     
 
