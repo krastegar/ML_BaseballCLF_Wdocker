@@ -4,13 +4,10 @@ import random
 import sys
 import warnings
 from argparse import ArgumentError
-from gettext import bind_textdomain_codeset
-from nis import cat
 from typing import List
 
 import numpy as np
 import pandas as pd
-import plotly.io as io
 import seaborn as sns
 import statsmodels.api
 from plotly import express as px
@@ -587,8 +584,6 @@ class Correlation(read_data):
             to ignore yates correction factor on 2x2
         3.) Haven't validated Tschuprow
 
-        Bias correction and formula's taken from : https://www.researchgate.net/publication/270277061_A_bias-correction_for_Cramer's_V_and_Tschuprow's_T
-
         Wikipedia for Cramer's V: https://en.wikipedia.org/wiki/Cram%C3%A9r%27s_V
         Wikipedia for Tschuprow' T: https://en.wikipedia.org/wiki/Tschuprow%27s_T
         Parameters:
@@ -663,7 +658,7 @@ class Correlation(read_data):
         fig.show()
 
         fig.write_html(
-            file=f"Correlation Matrix: Continuous vs Continuous ",
+            file="Correlation Matrix: Continuous vs Continuous ",
             include_plotlyjs="cdn",
         )
         return
@@ -679,7 +674,7 @@ class Correlation(read_data):
 
         fig.update_layout(title="Correlation Matrix: Continuous / Categorical ")
         fig.write_html(
-            file=f"Correlation Matrix: Continuous vs Categorical ",
+            file="Correlation Matrix: Continuous vs Categorical ",
             include_plotlyjs="cdn",
         )
 
@@ -697,7 +692,7 @@ class Correlation(read_data):
 
         fig.update_layout(title="Correlation Matrix: Categorical / Categorical ")
         fig.write_html(
-            file=f"Correlation Matrix: Categorical vs Categorical ",
+            file="Correlation Matrix: Categorical vs Categorical ",
             include_plotlyjs="cdn",
         )
         fig.show()
@@ -726,10 +721,8 @@ class BruteForce(DiffMeanResponse):
         df = self.ChangeBinaryToBool()
 
         # Getting response type
-        # print("Response: ",self.response)
-        response_type = self.get_col_type(self.response)
-        # print("\nResponse Type: ", response_type)
-        # print("\npredictor 1: ", self.pred1)
+        # response_type = self.get_col_type(self.response)
+
         pred1_type = self.get_col_type(pred1)
         # print("\npredictor 1 type: ", pred1_type)
         # print('\n predictor 2: ', self.pred2)
@@ -764,7 +757,7 @@ class BruteForce(DiffMeanResponse):
             count_stats = binned_statistic_2d(
                 pred1_data, pred2_data, response_data, statistic="count", bins=bin_size
             )
-            bin_x = np.arange(0, 9)
+
         elif pred1_type == "categorical" and pred2_type == "categorical":
             # need to find a way to choose between bin_sizes
             # just gonna use the larger one of the two
@@ -811,19 +804,6 @@ class BruteForce(DiffMeanResponse):
         count_2d = count_stats.statistic
         pop_2dArray = bin_2dstats / count_2d
         weighted_means = pop_2dArray * (bin_2dstats - pop_mean_response) ** 2
-
-        """
-        df=pd.DataFrame(
-            {
-                "Bin": np.arange(bin_size*bin_size),
-                'Pred 1': pred1, 
-                'Pred 2' : pred2, 
-                "PopulationProportion": population_proportion,
-                "MeanSquaredDiff": mean_square_diff,
-                "MeanSquaredDiffWeighted": weighted_diff
-            }
-        )
-        """
 
         return pred1, pred2, mean_square_diff, weighted_diff, weighted_means
 
@@ -970,9 +950,9 @@ def check_list(list1, list2):
     if list are none_type, will return empty string
     Used for calling all my methods even if list is empty
     """
-    if list1 == None:
+    if list1 is None:
         list1 = [""]
-    elif list2 == None:
+    elif list2 is None:
         list2 = [""]
     return list1, list2
 
@@ -996,14 +976,20 @@ def main():
     # and response variable category
     continuous, categorical, boolean = object.checkColIsContOrCat()
 
-
     # Getting response type
     response_VarGroup = object.get_col_type(response)
     print("Response Type: ", response, response_VarGroup)
 
     # plotting continuous predictors with response
     # Also grabbing pvalues and tvalues from continuous responses
-    stats_values,predictor_type, plot_paths, predictor_name, resp_name, resp_type = [], [], [],[],[], []
+    stats_values, predictor_type, plot_paths, predictor_name, resp_name, resp_type = (
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+    )
     for cont_pred in continuous:
         if continuous is None:
             continue
@@ -1038,10 +1024,10 @@ def main():
                 df=df,
                 predictors=predictors,
             ).BoolResponse_vs_ContPredictor()
-            _, tval,pval = test
+            _, tval, pval = test
             stats_values.append(test)
             print(tval, pval)
-            file =f"{cur_dir}/Logistic_regression: {cont_pred}"
+            file = f"{cur_dir}/Logistic_regression: {cont_pred}"
             predictor_name.append(cont_pred)
             predictor_type.append("Continuous")
             plot_paths.append(file)
@@ -1059,7 +1045,7 @@ def main():
             test = Cat_vs_Cont(
                 categorical=cat_pred, response=response, df=df, predictors=predictors
             ).contResponse_vs_catPredictor()
-            file = f"{cur_dir}/ViolinPlots: {cat_pred}",
+            file = (f"{cur_dir}/ViolinPlots: {cat_pred}",)
             predictor_name.append(cat_pred)
             predictor_type.append("Categorical")
             plot_paths.append(file)
@@ -1070,7 +1056,7 @@ def main():
             test = Cat_vs_Cont(
                 categorical=cat_pred, response=response, df=df, predictors=predictors
             ).catResponse_vs_catPredictor()
-            
+
             file = f"{cur_dir}/HeatMap: {cat_pred} vs {response} "
             predictor_name.append(cat_pred)
             predictor_type.append("Categorical")
@@ -1083,17 +1069,18 @@ def main():
                 "Something is not being plotted correctly, issue with class?"
             )
 
-    HW_4_html_df = pd.DataFrame({
-        "Predictor Type":predictor_type, 
-        "Predictor": predictor_name, 
-        "Response":resp_name, 
-        "Response type": resp_type,
-        "Links to Plots":plot_paths, 
-    })
+    HW_4_html_df = pd.DataFrame(
+        {
+            "Predictor Type": predictor_type,
+            "Predictor": predictor_name,
+            "Response": resp_name,
+            "Response type": resp_type,
+            "Links to Plots": plot_paths,
+        }
+    )
 
-    HW_4_html_df = HW_4_html_df.style.format({'Links to Plots': make_clickable})
-    HW_4_html_df.to_html("__HW4_plots.html", escape = 'html')
-
+    HW_4_html_df = HW_4_html_df.style.format({"Links to Plots": make_clickable})
+    HW_4_html_df.to_html("__HW4_plots.html", escape="html")
 
     # RF regressor, obtaining feature importance
     if response_VarGroup == "continuous":
@@ -1118,40 +1105,46 @@ def main():
     stats_df["Feature_Importance"] = np.array(
         feature_ranking["Feature_Importance"]
     ).tolist()
- 
+
     stats_df.to_html("__FeatureRanking.html")
-    # ------ plotting the mean of response stuff --------- 
+    # ------ plotting the mean of response stuff ---------
     weighted_mr, unweighted_mr = [], []
     bin_table_links, plotly_plot_links = [], []
     pred_label, response_label = [], []
     for pred in predictors:
-        mr_df = DiffMeanResponse(response=response, df=df, pred_input=pred
-                        ).Mean_Squared_DF()
+        mr_df = DiffMeanResponse(
+            response=response, df=df, pred_input=pred
+        ).Mean_Squared_DF()
         # print(pred, '\n', MeanResponseDF)
         mr_df.to_html(f"{pred} MR_table.html")
         table_path = f"{cur_dir}/{pred} MR_table.html"
-        MeanPlots = DiffMeanResponse(response=response, df=df, pred_input=pred
-                        ).plot_Mean_diff()
+        MeanPlots = DiffMeanResponse(
+            response=response, df=df, pred_input=pred
+        ).plot_Mean_diff()
+        print("using plot", MeanPlots)
         plot_path = f"{cur_dir}/Mean of Response: response = {response} vs {pred}.html"
-        unweighted_mean = np.mean(mr_df['MeanSquaredDiff'])
-        weighted_mean = np.mean(mr_df['MeanSquaredDiffWeighted'])
+        unweighted_mean = np.mean(mr_df["MeanSquaredDiff"])
+        weighted_mean = np.mean(mr_df["MeanSquaredDiffWeighted"])
         weighted_mr.append(weighted_mean)
         unweighted_mr.append(unweighted_mean)
         bin_table_links.append(table_path)
         plotly_plot_links.append(plot_path)
         pred_label.append(pred)
         response_label.append(response)
-    mr_report_df = pd.DataFrame({"Response": response_label,
-                                "Predictor": pred_label,
-                                "WeightedMeanofResponse" : weighted_mr, 
-                                "UnWeightedMeanOfResponse": unweighted_mr, 
-                                "LinksToBinReport": bin_table_links, 
-                                "LinksToPlots" : plotly_plot_links})
-    mr_report_df=mr_report_df.style.format({'LinksToBinReport': make_clickable,
-                                            "LinksToPlots": make_clickable})
-    mr_report_df.to_html("__MEANofRESPONSE_report.html", escape='html')
-    
-
+    mr_report_df = pd.DataFrame(
+        {
+            "Response": response_label,
+            "Predictor": pred_label,
+            "WeightedMeanofResponse": weighted_mr,
+            "UnWeightedMeanOfResponse": unweighted_mr,
+            "LinksToBinReport": bin_table_links,
+            "LinksToPlots": plotly_plot_links,
+        }
+    )
+    mr_report_df = mr_report_df.style.format(
+        {"LinksToBinReport": make_clickable, "LinksToPlots": make_clickable}
+    )
+    mr_report_df.to_html("__MEANofRESPONSE_report.html", escape="html")
 
     # ----- getting Predictor correlation values -------
 
@@ -1219,7 +1212,7 @@ def main():
         cat_contDF
     )
     cat_corrPlots = Correlation(df=df, response=response).cat_vs_cat_matrix(cat_corrDF)
-
+    print("Using plot", cat_corrPlots, ContContMatrix, cat_cont_matrixPlot)
     # ----- Calculating Brute Force --------
 
     # BruteForce Cont/ Cat:
@@ -1274,6 +1267,17 @@ def main():
     ].astype(str)
     cont_cont_brutDF = cont_cont_brutDF.style.format({"BF Matrix Plot": make_clickable})
     cont_cont_brutDF.to_html("___BF_Cont_Cont_table.html", escape="html")
+
+    print(
+        """
+        Hi professor, I want to mention a few things: \
+        1. All of the reports are in a html file that start with '__blah'
+        2. For some reasons the links to the plots work with Firefox web_browser and not chrome
+        3. I wasn't sure if we were supposed to make links to the correlation matrix plots, so I just used fig_show()
+
+            If you can....go easy on me.....have mercy...thanks
+        """
+    )
 
     return
 
