@@ -1,22 +1,27 @@
-from gettext import bind_textdomain_codeset
 import itertools
+import pathlib
 import random
 import sys
 import warnings
 from argparse import ArgumentError
+from gettext import bind_textdomain_codeset
 from nis import cat
-from typing import List  
+from typing import List
 
 import numpy as np
 import pandas as pd
-import pathlib
+import plotly.io as io
 import seaborn as sns
 import statsmodels.api
-import plotly.io as io
 from plotly import express as px
 from plotly import figure_factory as ff
 from plotly import graph_objects as go
-from scipy.stats import binned_statistic, chi2_contingency, pearsonr, binned_statistic_2d
+from scipy.stats import (
+    binned_statistic,
+    binned_statistic_2d,
+    chi2_contingency,
+    pearsonr,
+)
 from sklearn import datasets
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import confusion_matrix
@@ -184,14 +189,14 @@ class Cat_vs_Cont(read_data):
             yaxis_title=f"{self.df[self.categorical].name}",
         )
         # fig_no_relationship.show()
-        '''
+        """
         fig_no_relationship.write_html(
             file=f"HeatMap: {self.df[self.categorical].name} vs {self.df[self.response].name} ",
             include_plotlyjs="cdn",
         )
-        '''
+        """
         return fig_no_relationship.write_html(
-            file=f"HeatMap: {self.df[self.categorical].name} vs {self.df[self.response].name} ",
+            file=f"HeatMap: {self.categorical} vs {self.response} ",
             include_plotlyjs="cdn",
         )
 
@@ -320,7 +325,7 @@ class RF_importance(read_data):
 
 
 class DiffMeanResponse(read_data):
-    def __init__(self, pred_input = None, *args, **kwargs):
+    def __init__(self, pred_input=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.pred = pred_input
 
@@ -480,7 +485,7 @@ class DiffMeanResponse(read_data):
                 name="Pop-Mean",
                 x=mean_diff_df["BinCenters"],
                 y=mean_diff_df["PopulationMean"],
-                yaxis="2ndYaxis",
+                yaxis="y2",
             )
         )
         fig.add_trace(
@@ -488,7 +493,7 @@ class DiffMeanResponse(read_data):
                 name="Squared diff",
                 x=mean_diff_df["BinCenters"],
                 y=mean_diff_df["BinMeans"],
-                yaxis="2ndYaxis",
+                yaxis="y2",
             )
         )
         fig.update_layout(title=f"Difference w/ Mean Response: {self.pred}")
@@ -501,14 +506,12 @@ class DiffMeanResponse(read_data):
         fig.update_xaxes(
             tickvals=mean_diff_df["BinCenters"], ticktext=mean_diff_df["Bin"]
         )
-  
-        
+
         # fig.show()
         return fig.write_html(
             file=f"Mean of Response: response = {self.response} vs {self.pred}.html",
             include_plotlyjs="cdn",
         )
-
 
 
 class Correlation(read_data):
@@ -657,13 +660,13 @@ class Correlation(read_data):
         fig = px.imshow(cont_matrix)
 
         fig.update_layout(title="Correlation Matrix: Continuous / Continuous ")
-        #fig.show()
+        fig.show()
 
         fig.write_html(
             file=f"Correlation Matrix: Continuous vs Continuous ",
             include_plotlyjs="cdn",
         )
-        return 
+        return
 
     def cat_vs_cont_matrix(self, corr_matrix):
         cat_catDF = corr_matrix.pivot_table(
@@ -681,7 +684,7 @@ class Correlation(read_data):
         )
 
         fig.show()
-        return  
+        return
 
     def cat_vs_cat_matrix(self, corr_matrix):
         cat_catDF = corr_matrix.pivot_table(
@@ -697,27 +700,28 @@ class Correlation(read_data):
             file=f"Correlation Matrix: Categorical vs Categorical ",
             include_plotlyjs="cdn",
         )
-        # fig.show()
-        return 
+        fig.show()
+        return
+
 
 class BruteForce(DiffMeanResponse):
-    def __init__(self, list1,list2,*args, **kwargs):
+    def __init__(self, list1, list2, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.list1 = list1
         self.list2 = list2
-   
+
     def cat_pred_bin(self, predictor_data):
-        
+
         le = LabelEncoder()
         label_fit = le.fit_transform(predictor_data)
         predictor_data = label_fit
         bin_size = len(np.unique(predictor_data))
         bin_label = np.unique(le.inverse_transform(label_fit))
-        
+
         return predictor_data, bin_size, bin_label
 
     def brute_force_2d(self, pred1, pred2):
-        
+
         # Reading in df
         df = self.ChangeBinaryToBool()
 
@@ -727,65 +731,76 @@ class BruteForce(DiffMeanResponse):
         # print("\nResponse Type: ", response_type)
         # print("\npredictor 1: ", self.pred1)
         pred1_type = self.get_col_type(pred1)
-        #print("\npredictor 1 type: ", pred1_type)
+        # print("\npredictor 1 type: ", pred1_type)
         # print('\n predictor 2: ', self.pred2)
         pred2_type = self.get_col_type(pred2)
-        #print("\npredictor 2 type: ", pred2_type)
+        # print("\npredictor 2 type: ", pred2_type)
         # Predictor and response Data
-        pred1_data, pred2_data, response_data = df[pred1], df[pred2],df[self.response]
+        pred1_data, pred2_data, response_data = df[pred1], df[pred2], df[self.response]
 
         # Conditions for predictors
-        if pred1_type == 'continuous' and pred2_type == 'continuous':
+        if pred1_type == "continuous" and pred2_type == "continuous":
             bin_size = 10
-            bin_label = np.arange(0,9)
-            brute_stats = binned_statistic_2d(pred1_data, pred2_data, response_data,
-                                            statistic = 'mean', bins=bin_size)
-            count_stats = binned_statistic_2d(pred1_data, pred2_data, response_data,
-                                            statistic = 'count', bins=bin_size) 
-        elif pred1_type in ("categorical", "boolean") and pred2_type == 'continuous':
-            pred1_data, bin_size, bin_label= self.cat_pred_bin(pred1_data)
-            brute_stats = binned_statistic_2d(pred1_data, pred2_data, response_data,
-                                            statistic = 'mean', bins=bin_size)                
-            count_stats = binned_statistic_2d(pred1_data, pred2_data, response_data,
-                                            statistic = 'count', bins=bin_size) 
-        elif pred1_type == "continuous" and pred2_type in ('categorical', 'boolean'):
-            pred2_data,  bin_size, bin_label= self.cat_pred_bin(pred2_data)
-            brute_stats = binned_statistic_2d(pred1_data, pred2_data, response_data,
-                                            statistic = 'mean', bins=bin_size)
-            count_stats = binned_statistic_2d(pred1_data, pred2_data, response_data,
-                                statistic = 'count', bins=bin_size) 
-            bin_x =  np.arange(0,9)
-        elif pred1_type == 'categorical' and pred2_type == 'categorical':
-            # need to find a way to choose between bin_sizes 
+            bin_label = np.arange(0, 9)
+            brute_stats = binned_statistic_2d(
+                pred1_data, pred2_data, response_data, statistic="mean", bins=bin_size
+            )
+            count_stats = binned_statistic_2d(
+                pred1_data, pred2_data, response_data, statistic="count", bins=bin_size
+            )
+        elif pred1_type in ("categorical", "boolean") and pred2_type == "continuous":
+            pred1_data, bin_size, bin_label = self.cat_pred_bin(pred1_data)
+            brute_stats = binned_statistic_2d(
+                pred1_data, pred2_data, response_data, statistic="mean", bins=bin_size
+            )
+            count_stats = binned_statistic_2d(
+                pred1_data, pred2_data, response_data, statistic="count", bins=bin_size
+            )
+        elif pred1_type == "continuous" and pred2_type in ("categorical", "boolean"):
+            pred2_data, bin_size, bin_label = self.cat_pred_bin(pred2_data)
+            brute_stats = binned_statistic_2d(
+                pred1_data, pred2_data, response_data, statistic="mean", bins=bin_size
+            )
+            count_stats = binned_statistic_2d(
+                pred1_data, pred2_data, response_data, statistic="count", bins=bin_size
+            )
+            bin_x = np.arange(0, 9)
+        elif pred1_type == "categorical" and pred2_type == "categorical":
+            # need to find a way to choose between bin_sizes
             # just gonna use the larger one of the two
             pred1_data, bin_size, bin_label_1 = self.cat_pred_bin(pred1_data)
             pred2_data, bin_size, bin_label = self.cat_pred_bin(pred2_data)
 
-            brute_stats = binned_statistic_2d(pred1_data, pred2_data, response_data,
-                                            statistic = 'mean', bins=bin_size) 
-            count_stats = binned_statistic_2d(pred1_data, pred2_data, response_data,
-                                            statistic = 'count', bins=bin_size) 
-        else: 
+            brute_stats = binned_statistic_2d(
+                pred1_data, pred2_data, response_data, statistic="mean", bins=bin_size
+            )
+            count_stats = binned_statistic_2d(
+                pred1_data, pred2_data, response_data, statistic="count", bins=bin_size
+            )
+        else:
             raise ArgumentError("Not the correct Predictor Type for BruteForce Method")
-        
 
         pop_mean_response = np.mean(response_data)
 
-        bin_counts, x_edge, y_edge = np.histogram2d(pred1_data, pred2_data, bins=bin_size)
-        #bin_area = bin_counts.flatten() # this is giving me the total sample size of each bin
-        matrix_area = len(x_edge) * len(y_edge) # area of entire nxn matrix (based on # of bins)
+        bin_counts, x_edge, y_edge = np.histogram2d(
+            pred1_data, pred2_data, bins=bin_size
+        )
+        # bin_area = bin_counts.flatten() # this is giving me the total sample size of each bin
+        matrix_area = len(x_edge) * len(
+            y_edge
+        )  # area of entire nxn matrix (based on # of bins)
         bin_means = brute_stats.statistic.flatten()
-        bin_means_noNan = np.nan_to_num(bin_means) # switching nan to 0's
-        population_proportion = bin_means_noNan/matrix_area
-        
+        bin_means_noNan = np.nan_to_num(bin_means)  # switching nan to 0's
+        population_proportion = bin_means_noNan / matrix_area
+
         # replacing nan with 0 in bin_means
-        
+
         mean_square_diff, weighted_diff = self.squared_diffs(
-                bins_edge=bin_means,
-                bin_means=bin_means_noNan,
-                pop_mean_response=pop_mean_response,
-                population_proportion=population_proportion,
-            )
+            bins_edge=bin_means,
+            bin_means=bin_means_noNan,
+            pop_mean_response=pop_mean_response,
+            population_proportion=population_proportion,
+        )
         # -------- plot just using 2d values ---------------
         # new plan : going to use counts df and mean df for population proportion
         # then do calculations on matrices
@@ -794,10 +809,10 @@ class BruteForce(DiffMeanResponse):
         # test_structure = (bin_2dstats, x_edge, y_edge, bin_number)
         bin_2dstats = bin_2dstats
         count_2d = count_stats.statistic
-        pop_2dArray = bin_2dstats/count_2d
-        weighted_means = pop_2dArray*(bin_2dstats - pop_mean_response)**2
-        
-        '''
+        pop_2dArray = bin_2dstats / count_2d
+        weighted_means = pop_2dArray * (bin_2dstats - pop_mean_response) ** 2
+
+        """
         df=pd.DataFrame(
             {
                 "Bin": np.arange(bin_size*bin_size),
@@ -808,28 +823,28 @@ class BruteForce(DiffMeanResponse):
                 "MeanSquaredDiffWeighted": weighted_diff
             }
         )
-        '''
-        
-        return pred1, pred2, mean_square_diff, weighted_diff,weighted_means
-    
+        """
+
+        return pred1, pred2, mean_square_diff, weighted_diff, weighted_means
+
     def BF_df(self):
         cont_cat_bruteforce = []
-        for tupl in itertools.product(
-            self.list1, self.list2
-        ):
+        for tupl in itertools.product(self.list1, self.list2):
             if tupl[0] == tupl[1]:
                 continue
             BruF = self.brute_force_2d(pred1=tupl[0], pred2=tupl[1])
-            pred1, pred2, mean_square_diff, weighted_diff,_= BruF
-            mean_unweighted, mean_weighted = np.mean(mean_square_diff), np.mean(weighted_diff)
-            cont_cat_bruteforce.append((pred1,pred2,mean_unweighted, mean_weighted ))
-        BF_cont_cat_df = pd.DataFrame(cont_cat_bruteforce, columns=['Pred 1', 'Pred 2', 'Unweighted', 'Weighted'])
+            pred1, pred2, mean_square_diff, weighted_diff, _ = BruF
+            mean_unweighted, mean_weighted = np.mean(mean_square_diff), np.mean(
+                weighted_diff
+            )
+            cont_cat_bruteforce.append((pred1, pred2, mean_unweighted, mean_weighted))
+        BF_cont_cat_df = pd.DataFrame(
+            cont_cat_bruteforce, columns=["Pred 1", "Pred 2", "Unweighted", "Weighted"]
+        )
 
-        return BF_cont_cat_df.sort_values('Weighted', ascending=False)
-    
+        return BF_cont_cat_df.sort_values("Weighted", ascending=False)
 
-    
-    def plot_func(self, brutforce_df,pred1, pred2, title):
+    def plot_func(self, brutforce_df, pred1, pred2, title):
         # title should be either, catVScat, catVScont, contVScont
         fig = px.imshow(brutforce_df)
 
@@ -838,23 +853,24 @@ class BruteForce(DiffMeanResponse):
             file=f"BruteForce {title}: {pred1} vs {pred2}",
             include_plotlyjs="cdn",
         )
-        # fig.show() 
+        # fig.show()
         file_string = f"BruteForce {title}: {pred1} vs {pred2}"
-        
+
         return file_string
 
     def plot_brutforce(self, title):
         file_names = []
-        for tupl in itertools.product(
-        self.list1, self.list2
-    ): 
-            if tupl[0]==tupl[1]:
+        for tupl in itertools.product(self.list1, self.list2):
+            if tupl[0] == tupl[1]:
                 continue
             brutDF = self.brute_force_2d(pred1=tupl[0], pred2=tupl[1])
-            _,_,_,_,bf_df = brutDF
-            cont_cat_brutDF= self.plot_func(bf_df,pred1=tupl[0], pred2=tupl[1], title=title)
+            _, _, _, _, bf_df = brutDF
+            cont_cat_brutDF = self.plot_func(
+                bf_df, pred1=tupl[0], pred2=tupl[1], title=title
+            )
             file_names.append(cont_cat_brutDF)
         return file_names
+
 
 def get_test_data_set(data_set_name: str = None) -> (pd.DataFrame, List[str], str):
     """Function to load a few test data sets
@@ -960,16 +976,18 @@ def check_list(list1, list2):
         list2 = [""]
     return list1, list2
 
+
 def make_clickable(val):
     # target _blank to open new window
     return '<a target="_blank" href="{}">{}</a>'.format(val, val)
+
 
 def main():
     # getting current working dir
     cur_dir = pathlib.Path().resolve()
 
     # Getting DF, predictors, and response
-    df, predictors, response = get_test_data_set('titanic')
+    df, predictors, response = get_test_data_set("titanic")
     # read in object
     object = read_data(response=response, df=df, predictors=predictors)
     object.dataframe()
@@ -978,20 +996,11 @@ def main():
     # and response variable category
     continuous, categorical, boolean = object.checkColIsContOrCat()
 
-    print(
-        "continuous: \n",
-        continuous,
-        "\ncategorical: \n",
-        categorical,
-        "\nboolean: \n",
-        boolean,
-    )
-    
-    
+
     # Getting response type
     response_VarGroup = object.get_col_type(response)
     print("Response Type: ", response, response_VarGroup)
-    '''
+
     # plotting continuous predictors with response
     # Also grabbing pvalues and tvalues from continuous responses
     stats_values,predictor_type, plot_paths, predictor_name, resp_name, resp_type = [], [], [],[],[], []
@@ -1031,7 +1040,8 @@ def main():
             ).BoolResponse_vs_ContPredictor()
             _, tval,pval = test
             stats_values.append(test)
-            file = f"{cur_dir}/Variable: {cont_pred}: (t-value={tval}) (p-value={pval})"
+            print(tval, pval)
+            file =f"{cur_dir}/Logistic_regression: {cont_pred}"
             predictor_name.append(cont_pred)
             predictor_type.append("Continuous")
             plot_paths.append(file)
@@ -1061,7 +1071,7 @@ def main():
                 categorical=cat_pred, response=response, df=df, predictors=predictors
             ).catResponse_vs_catPredictor()
             
-            file = f"{cur_dir}/HeatMap: {cat_pred} vs {response} ",
+            file = f"{cur_dir}/HeatMap: {cat_pred} vs {response} "
             predictor_name.append(cat_pred)
             predictor_type.append("Categorical")
             plot_paths.append(file)
@@ -1080,8 +1090,10 @@ def main():
         "Response type": resp_type,
         "Links to Plots":plot_paths, 
     })
+
     HW_4_html_df = HW_4_html_df.style.format({'Links to Plots': make_clickable})
     HW_4_html_df.to_html("__HW4_plots.html", escape = 'html')
+
 
     # RF regressor, obtaining feature importance
     if response_VarGroup == "continuous":
@@ -1139,9 +1151,6 @@ def main():
                                             "LinksToPlots": make_clickable})
     mr_report_df.to_html("__MEANofRESPONSE_report.html", escape='html')
     
-
-    print(cur_dir)
-    '''
 
 
     # ----- getting Predictor correlation values -------
@@ -1211,69 +1220,60 @@ def main():
     )
     cat_corrPlots = Correlation(df=df, response=response).cat_vs_cat_matrix(cat_corrDF)
 
-
     # ----- Calculating Brute Force --------
-   
 
     # BruteForce Cont/ Cat:
-    cont_cat_brutDF = BruteForce(df = df, 
-                                response=response, 
-                                list1=categorical, 
-                                list2=continuous).BF_df()
+    cont_cat_brutDF = BruteForce(
+        df=df, response=response, list1=categorical, list2=continuous
+    ).BF_df()
     # print('BruteForce Cont/ Cat: \n',cont_cat_brutDF)
 
-    # BruteForce Cat / Cat: 
-    cat_cat_brutDF = BruteForce(df = df, 
-                            response=response, 
-                            list1=categorical, 
-                            list2=categorical).BF_df()
+    # BruteForce Cat / Cat:
+    cat_cat_brutDF = BruteForce(
+        df=df, response=response, list1=categorical, list2=categorical
+    ).BF_df()
     # print('Cat / Cat \n',cat_cat_brutDF)
 
-    # BruteForce Cont / Cont: 
-    cont_cont_brutDF = BruteForce(df = df, 
-                        response=response, 
-                        list1=continuous, 
-                        list2=continuous).BF_df()
+    # BruteForce Cont / Cont:
+    cont_cont_brutDF = BruteForce(
+        df=df, response=response, list1=continuous, list2=continuous
+    ).BF_df()
     # print("Cont / Cont \n",cont_cont_brutDF)
 
     # ------ Brute Force Matrix Plots ---------
     # BruteForce Matrix: Cat / Cont
-    bf_cont_cat_plots = BruteForce(df = df, 
-                                    response=response, 
-                                    list1=continuous, 
-                                    list2=categorical
-                                    ).plot_brutforce("Categorical vs Continuous")
-    cont_cat_brutDF['BF Matrix Plot'] = bf_cont_cat_plots
-    cont_cat_brutDF['BF Matrix Plot'] = f"{cur_dir}/"+cont_cat_brutDF['BF Matrix Plot'].astype(str)
-    cont_cat_brutDF = cont_cat_brutDF.style.format({'BF Matrix Plot': make_clickable})
-    cont_cat_brutDF.to_html("___BF_Cont_Cat_table.html", escape = 'html')
+    bf_cont_cat_plots = BruteForce(
+        df=df, response=response, list1=continuous, list2=categorical
+    ).plot_brutforce("Categorical vs Continuous")
+    cont_cat_brutDF["BF Matrix Plot"] = bf_cont_cat_plots
+    cont_cat_brutDF["BF Matrix Plot"] = f"{cur_dir}/" + cont_cat_brutDF[
+        "BF Matrix Plot"
+    ].astype(str)
+    cont_cat_brutDF = cont_cat_brutDF.style.format({"BF Matrix Plot": make_clickable})
+    cont_cat_brutDF.to_html("___BF_Cont_Cat_table.html", escape="html")
 
     # BruteForce Matrix: Cat / Cat
-    bf_cat_cat_plots = BruteForce(df = df, 
-                                response=response, 
-                                list1=categorical, 
-                                list2=categorical
-                                ).plot_brutforce("Categorical vs Categorical")
-    
-    cat_cat_brutDF['BF Matrix Plot'] = bf_cat_cat_plots
-    cat_cat_brutDF['BF Matrix Plot'] = f"{cur_dir}/"+ cat_cat_brutDF['BF Matrix Plot'].astype(str)
-    cat_cat_brutDF = cat_cat_brutDF.style.format({'BF Matrix Plot': make_clickable})
-    cat_cat_brutDF.to_html("___BF_Cat_Cat_table.html", escape = 'html')
-    
+    bf_cat_cat_plots = BruteForce(
+        df=df, response=response, list1=categorical, list2=categorical
+    ).plot_brutforce("Categorical vs Categorical")
+
+    cat_cat_brutDF["BF Matrix Plot"] = bf_cat_cat_plots
+    cat_cat_brutDF["BF Matrix Plot"] = f"{cur_dir}/" + cat_cat_brutDF[
+        "BF Matrix Plot"
+    ].astype(str)
+    cat_cat_brutDF = cat_cat_brutDF.style.format({"BF Matrix Plot": make_clickable})
+    cat_cat_brutDF.to_html("___BF_Cat_Cat_table.html", escape="html")
+
     # BruteForce Matrix: Cont / Cont
-    bf_cont_cont_plots = BruteForce(df = df, 
-                                response=response, 
-                                list1=continuous, 
-                                list2=continuous
-                                ).plot_brutforce("Continuos vs Continuous")
-    cont_cont_brutDF['BF Matrix Plot'] = bf_cont_cont_plots
-    cont_cont_brutDF['BF Matrix Plot'] = f"{cur_dir}/"+ cont_cont_brutDF['BF Matrix Plot'].astype(str)
-    cont_cont_brutDF = cont_cont_brutDF.style.format({'BF Matrix Plot': make_clickable})
-    cont_cont_brutDF.to_html("___BF_Cont_Cont_table.html", escape = 'html')
-
-    
-
-
+    bf_cont_cont_plots = BruteForce(
+        df=df, response=response, list1=continuous, list2=continuous
+    ).plot_brutforce("Continuos vs Continuous")
+    cont_cont_brutDF["BF Matrix Plot"] = bf_cont_cont_plots
+    cont_cont_brutDF["BF Matrix Plot"] = f"{cur_dir}/" + cont_cont_brutDF[
+        "BF Matrix Plot"
+    ].astype(str)
+    cont_cont_brutDF = cont_cont_brutDF.style.format({"BF Matrix Plot": make_clickable})
+    cont_cont_brutDF.to_html("___BF_Cont_Cont_table.html", escape="html")
 
     return
 
