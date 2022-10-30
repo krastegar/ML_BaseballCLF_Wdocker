@@ -967,7 +967,7 @@ def main():
     cur_dir = pathlib.Path().resolve()
 
     # Getting DF, predictors, and response
-    df, predictors, response = get_test_data_set("titanic")
+    df, predictors, response = get_test_data_set()
     # read in object
     object = read_data(response=response, df=df, predictors=predictors)
     object.dataframe()
@@ -1045,7 +1045,7 @@ def main():
             test = Cat_vs_Cont(
                 categorical=cat_pred, response=response, df=df, predictors=predictors
             ).contResponse_vs_catPredictor()
-            file = (f"{cur_dir}/ViolinPlots: {cat_pred}",)
+            file = f"{cur_dir}/ViolinPlots: {cat_pred}"
             predictor_name.append(cat_pred)
             predictor_type.append("Categorical")
             plot_paths.append(file)
@@ -1057,7 +1057,7 @@ def main():
                 categorical=cat_pred, response=response, df=df, predictors=predictors
             ).catResponse_vs_catPredictor()
 
-            file = f"{cur_dir}/HeatMap: {cat_pred} vs {response} "
+            file = f"{cur_dir}/HeatMap: {cat_pred} vs {response}"
             predictor_name.append(cat_pred)
             predictor_type.append("Categorical")
             plot_paths.append(file)
@@ -1271,6 +1271,7 @@ def main():
     print(
         """
         Hi professor, I want to mention a few things: \
+
         1. All of the reports are in a html file that start with '__blah'
         2. For some reasons the links to the plots work with Firefox web_browser and not chrome
         3. I wasn't sure if we were supposed to make links to the correlation matrix plots, so I just used fig_show()
