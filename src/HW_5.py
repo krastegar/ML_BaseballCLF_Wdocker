@@ -30,7 +30,7 @@ class sqlPandasSpark:
             SELECT * FROM Master
         """
         df = pd.read_sql_query(query, sql_engine)
-
+        _ = "dummy"
         return df
 
 
