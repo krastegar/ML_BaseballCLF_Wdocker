@@ -263,25 +263,68 @@ class RF_importance(read_data):
 
 
 class DiffMeanResponse(read_data):
-    def __init__(self, continuous, *args, **kwargs):
+    def __init__(self, predictors, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.continuous = continuous
+        self.predictors = predictors
 
     def upper_lower_bin(self):
+        _ = pd.DataFrame(
+            columns=[
+                "(𝑖)",
+                "LowerBin",
+                "UpperBin",
+                "BinCenters",
+                "BinCount",
+                "BinMeans",
+                "PopulationMean",
+                "MeanSquaredDiff",
+                "PopulationProportion",
+                "MeanSquaredDiffWeighted",
+            ]
+        )
         df = self.ChangeBinaryToBool()
-        cont = df[self.continuous]
-        counts, bins = np.histogram(cont)
-        results_df = pd.DataFrame([counts, bins])
-        return results_df
+        df = df[[self.predictors, self.response]].dropna()
+
+        # only looking at 1 predictor and response column
+        df = df.sort_values(by=self.predictors, ascending=True).reset_index(drop=True)
+
+        # gives me 9 bin steps that are of equal size
+        bin_step_sizes = [
+            ((df[self.predictors].max() - df[self.predictors].min()) / 10)
+        ] * 9
+
+        # calculate mean response per bin, bin predictor min, bin predictor max
+        previous_bin_max = min(df[self.predictors])  # min value of predictor column
+        _ = np.mean(df[self.response])  # mean of response column
+
+        # not sure why bin_step_size here. I know its an array of all the same vaclues
+        for i, bin_step_size in enumerate(bin_step_sizes):
+            bin_df = df[
+                (
+                    df[self.predictors] >= previous_bin_max
+                )  # prev bin max == 0 in this example
+                & (df[self.predictors] < previous_bin_max + bin_step_size)
+            ]
+        print(bin_df)
+        print(len(bin_df), len(df))
+        bin_count = len(bin_df)
+        _ = bin_count / len(df)
+
+        return
 
 
 def main():
 
     # read in object and dataframe
-    object = read_data()
+    _ = read_data()
+    crap = DiffMeanResponse("Cholesterol")
+    crap1 = crap.upper_lower_bin()
+    print(crap1)
 
+    """
     # split predictor columns into respective groups
     # and response variable category
+
     continuous, categorical, boolean, response_VarGroup = object.checkColIsContOrCat()
     response = object.get_response()
 
@@ -318,16 +361,17 @@ def main():
 
     # RF regressor, obtaining feature importance
     machineLearning = RF_importance(continuous)
-    ml_df = machineLearning.RF_regressor()
+    feature_ranking = machineLearning.RF_regressor()
 
     # combining regression statistics with RF feature importance
     tval, pval = [], []
     tval = [tval.append(stats_values[i][1]) for i in range(0, len(stats_values))]
     pval = [pval.append(stats_values[i][2]) for i in range(0, len(stats_values))]
 
-    ml_df["t-value"] = tval
-    ml_df["p-value"] = pval
-    print(ml_df)
+    feature_ranking["t-value"] = tval
+    feature_ranking["p-value"] = pval
+    print(feature_ranking)
+    """
 
     return
 

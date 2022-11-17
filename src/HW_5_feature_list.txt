@@ -1,0 +1,12 @@
+baseball features: 
+	1. homeruns per inning
+	2. Home runs allowed xxx
+	3. Base on balls 	xxx
+	4. Strikeout		xxx
+	5. Power finesse ratio ????
+	6. Run average
+	7. Strikeout-to-walk ratio
+	8. Innings pitched
+	9. Strikeouts per nine innings pitched
+	10. Hits per nine innings
+
