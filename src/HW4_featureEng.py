@@ -241,7 +241,7 @@ class RF_importance(read_data):
     def RF_regressor(self):
         # loading data
         df = self.ChangeBinaryToBool()
-        #df[self.boolean] = df[self.boolean].astype(int) # changing booleans into ints
+        # df[self.boolean] = df[self.boolean].astype(int) # changing booleans into ints
 
         # Split data into features and response
         X = df[self.continuous]
@@ -268,45 +268,47 @@ class DiffMeanResponse(read_data):
         self.predictors = predictors
 
     def upper_lower_bin(self):
-        msd_df = pd.DataFrame(
-        columns=[
-            "(𝑖)",
-            "LowerBin",
-            "UpperBin",
-            "BinCenters",
-            "BinCount",
-            "BinMeans",
-            "PopulationMean",
-            "MeanSquaredDiff",
-            "PopulationProportion",
-            "MeanSquaredDiffWeighted",
-        ]
+        _ = pd.DataFrame(
+            columns=[
+                "(𝑖)",
+                "LowerBin",
+                "UpperBin",
+                "BinCenters",
+                "BinCount",
+                "BinMeans",
+                "PopulationMean",
+                "MeanSquaredDiff",
+                "PopulationProportion",
+                "MeanSquaredDiffWeighted",
+            ]
         )
         df = self.ChangeBinaryToBool()
         df = df[[self.predictors, self.response]].dropna()
-        
+
         # only looking at 1 predictor and response column
         df = df.sort_values(by=self.predictors, ascending=True).reset_index(drop=True)
-        
+
         # gives me 9 bin steps that are of equal size
-        bin_step_sizes = [((df[self.predictors].max() - df[self.predictors].min()) / 10)] * 9
+        bin_step_sizes = [
+            ((df[self.predictors].max() - df[self.predictors].min()) / 10)
+        ] * 9
 
         # calculate mean response per bin, bin predictor min, bin predictor max
-        previous_bin_max = min(df[self.predictors]) # min value of predictor column
-        pop_mean_response = np.mean(df[self.response]) # mean of response column
+        previous_bin_max = min(df[self.predictors])  # min value of predictor column
+        _ = np.mean(df[self.response])  # mean of response column
 
         # not sure why bin_step_size here. I know its an array of all the same vaclues
         for i, bin_step_size in enumerate(bin_step_sizes):
             bin_df = df[
-                (df[self.predictors] >= previous_bin_max) # prev bin max == 0 in this example
+                (
+                    df[self.predictors] >= previous_bin_max
+                )  # prev bin max == 0 in this example
                 & (df[self.predictors] < previous_bin_max + bin_step_size)
             ]
         print(bin_df)
         print(len(bin_df), len(df))
         bin_count = len(bin_df)
-        pop_porp = bin_count / len(df)
-
-
+        _ = bin_count / len(df)
 
         return
 
@@ -314,12 +316,12 @@ class DiffMeanResponse(read_data):
 def main():
 
     # read in object and dataframe
-    object = read_data()
-    crap = DiffMeanResponse('Cholesterol')
+    _ = read_data()
+    crap = DiffMeanResponse("Cholesterol")
     crap1 = crap.upper_lower_bin()
     print(crap1)
-    
-    '''
+
+    """
     # split predictor columns into respective groups
     # and response variable category
 
@@ -369,7 +371,7 @@ def main():
     feature_ranking["t-value"] = tval
     feature_ranking["p-value"] = pval
     print(feature_ranking)
-    '''
+    """
 
     return
 

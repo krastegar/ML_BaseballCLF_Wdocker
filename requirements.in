@@ -1,7 +1,10 @@
-numpy
+numpy 
 pandas
 plotly
 scipy
 sklearn
 pyspark
 statsmodels
+seaborn
+sqlalchemy
+mariadb

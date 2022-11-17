@@ -34,7 +34,7 @@ def read_data(table_name):
     host_name = "localhost"
     port_no = "3306"
     user_name = "root"
-    password = "Hamid&Mahasty1"  # pragma: allowlist secret
+    password = "root"  # pragma: allowlist secret
     database_name = "baseball"
 
     # Making JDBC URL
