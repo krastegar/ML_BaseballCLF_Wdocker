@@ -1,5 +1,4 @@
 import itertools
-import pathlib
 import random
 import sys
 import warnings
@@ -64,7 +63,11 @@ class read_data:
         then separate the column names into their respective groups
         """
         # Making arrays to contain column names for each group
-        cont_array, cat_array, bool_array= [], [], [],
+        cont_array, cat_array, bool_array = (
+            [],
+            [],
+            [],
+        )
 
         # Make sure that binary response column is changed into a boolean
         df = self.ChangeBinaryToBool()  # -- method introduces bug in my code
@@ -86,7 +89,7 @@ class read_data:
                     cat_array.append(col_name)
                     # print(col_name, " Not Continuous or Bool")
                     continue
-                elif data_type.dtype == 'datetime64[ns]': 
+                elif data_type.dtype == "datetime64[ns]":
                     df[col_name] = df[col_name].astype(int)
                     cont_array.append(col_name)
                 else:  # Raise Error for unknown data types
@@ -519,6 +522,7 @@ class DiffMeanResponse(read_data):
         file_string = f"Mean_of_Response_response_=_{self.response}_vs_{self.pred}.html"
         return file_string
 
+
 class Correlation(read_data):
     """
     Determining correlation of PREDICTORS only
@@ -637,7 +641,7 @@ class Correlation(read_data):
                 corr_coeff = np.sqrt(
                     phi2_corrected / min((r_corrected - 1), (c_corrected - 1))
                 )
-                return self.a, self.b, corr_coeff,corr_type
+                return self.a, self.b, corr_coeff, corr_type
             if tschuprow:
                 corr_coeff = np.sqrt(phi2 / np.sqrt((r - 1) * (c - 1)))
                 return self.a, self.b, corr_coeff, corr_type
@@ -1005,9 +1009,15 @@ def main():
             test = Cat_vs_Cont(
                 cont_pred, response=response, df=df, predictors=predictors
             ).contResponse_vs_contPredictor()
-            _,_,_,file = test
-            cont_name, t_value, p_value,_ = test
-            stats_values.append((cont_name,t_value, p_value,))
+            _, _, _, file = test
+            cont_name, t_value, p_value, _ = test
+            stats_values.append(
+                (
+                    cont_name,
+                    t_value,
+                    p_value,
+                )
+            )
             predictor_name.append(cont_pred)
             predictor_type.append("Continuous")
             plot_paths.append(file)
@@ -1019,7 +1029,8 @@ def main():
                 cont_pred, response=response, df=df, predictors=predictors
             ).catResponse_vs_contPredictor()
 
-            file = test; print("this is a file: ", file)
+            file = test
+            print("this is a file: ", file)
             predictor_name.append(cont_pred)
             predictor_type.append("Continuous")
             plot_paths.append(file)
@@ -1044,7 +1055,7 @@ def main():
         else:
             print(cont_pred, response_VarGroup)
             raise TypeError("invalid input...by me")
-    
+
     # Plotting categorical predictors with response
     for cat_pred in categorical:
         if categorical is None:
@@ -1053,8 +1064,9 @@ def main():
             test = Cat_vs_Cont(
                 categorical=cat_pred, response=response, df=df, predictors=predictors
             ).contResponse_vs_catPredictor()
-            
-            file = test; print("this is a file: ", file)
+
+            file = test
+            print("this is a file: ", file)
             predictor_name.append(cat_pred)
             predictor_type.append("Categorical")
             plot_paths.append(file)
@@ -1066,7 +1078,8 @@ def main():
                 categorical=cat_pred, response=response, df=df, predictors=predictors
             ).catResponse_vs_catPredictor()
 
-            file = test; print("this is a file: ", file)
+            file = test
+            print("this is a file: ", file)
             predictor_name.append(cat_pred)
             predictor_type.append("Categorical")
             plot_paths.append(file)
@@ -1154,7 +1167,9 @@ def main():
     mr_report_df = mr_report_df.style.format(
         {"LinksToBinReport": make_clickable, "LinksToPlots": make_clickable}
     )
-    mr_report_df.to_html("../html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html")
+    mr_report_df.to_html(
+        "../html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html"
+    )
 
     # ----- getting Predictor correlation values -------
 
@@ -1172,7 +1187,8 @@ def main():
         ).cont_cont_Corr()
         contVScont_stats.append(corr_object)
     cont_corrDF = pd.DataFrame(
-        contVScont_stats, columns=["Predictor 1", "Predictor 2", "Corr Coef", "Corr Type"]
+        contVScont_stats,
+        columns=["Predictor 1", "Predictor 2", "Corr Coef", "Corr Type"],
     ).sort_values("Corr Coef", ascending=False)
 
     # Categorical vs Cont correlation statistics
@@ -1192,7 +1208,8 @@ def main():
         catVScont_stats.append(corr_object)
     # reset_index is necessary to make sure index don't get messed up in calculations
     cat_contDF = pd.DataFrame(
-        catVScont_stats, columns=["Predictor 1", "Predictor 2", "Corr Coef", "Corr Type"]
+        catVScont_stats,
+        columns=["Predictor 1", "Predictor 2", "Corr Coef", "Corr Type"],
     ).sort_values("Corr Coef", ascending=False)
 
     # Categorical vs Categorical predictor correlation values.
@@ -1214,11 +1231,13 @@ def main():
     ).sort_values("Corr Coef", ascending=False)
 
     # making data frame with all the correlation rankings
-    corr_report_df = pd.concat((cat_corrDF, cont_corrDF, cat_contDF), ignore_index=True
-                    ).sort_values('Corr Coef', ascending=False)
+    corr_report_df = pd.concat(
+        (cat_corrDF, cont_corrDF, cat_contDF), ignore_index=True
+    ).sort_values("Corr Coef", ascending=False)
     print(corr_report_df)
-    corr_report_df.to_html("../html_plots_and_tables/__CorrelationRanking_report.html", escape="html")
-
+    corr_report_df.to_html(
+        "../html_plots_and_tables/__CorrelationRanking_report.html", escape="html"
+    )
 
     # ---- Plotting Correlation Matrix ---------
     ContContMatrix = Correlation(response=response, df=df).cont_vs_cont_matrix()
@@ -1257,7 +1276,9 @@ def main():
         "BF Matrix Plot"
     ].astype(str)
     cont_cat_brutDF = cont_cat_brutDF.style.format({"BF Matrix Plot": make_clickable})
-    cont_cat_brutDF.to_html(f"{plot_folder_dir}/___BF_Cont_Cat_table.html", escape="html")
+    cont_cat_brutDF.to_html(
+        f"{plot_folder_dir}/___BF_Cont_Cat_table.html", escape="html"
+    )
 
     # BruteForce Matrix: Cat / Cat
     bf_cat_cat_plots = BruteForce(
@@ -1280,7 +1301,9 @@ def main():
         "BF Matrix Plot"
     ].astype(str)
     cont_cont_brutDF = cont_cont_brutDF.style.format({"BF Matrix Plot": make_clickable})
-    cont_cont_brutDF.to_html(f"{plot_folder_dir}/___BF_Cont_Cont_table.html", escape="html")
+    cont_cont_brutDF.to_html(
+        f"{plot_folder_dir}/___BF_Cont_Cont_table.html", escape="html"
+    )
 
     print(
         """

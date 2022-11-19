@@ -1,19 +1,17 @@
 import itertools
 
 import pandas as pd
-from midterm import (
-    read_data, 
-    Correlation, 
-    check_list
-) 
-  
+
+from midterm import Correlation, check_list, read_data
+
+
 class Corr_report(read_data):
-    def __init__(self,*args, **kwargs):
-        super().__init__(*args,**kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.df = self.ChangeBinaryToBool()
-  
+
     def corr_calculation(self):
-        
+
         continuous, categorical, boolean = self.checkColIsContOrCat()
         # using reverse list of correlation
         reversed_cont = sorted(continuous, reverse=True)
@@ -29,7 +27,8 @@ class Corr_report(read_data):
             ).cont_cont_Corr()
             contVScont_stats.append(corr_object)
         cont_corrDF = pd.DataFrame(
-            contVScont_stats, columns=["Predictor 1", "Predictor 2", "Corr Coef", "Corr Type"]
+            contVScont_stats,
+            columns=["Predictor 1", "Predictor 2", "Corr Coef", "Corr Type"],
         ).sort_values("Corr Coef", ascending=False)
 
         # Categorical vs Cont correlation statistics
@@ -43,13 +42,15 @@ class Corr_report(read_data):
             corr_object = Correlation(
                 response=self.response, df=self.df, a=tupl[0], b=tupl[1]
             ).cat_cont_correlation_ratio(
-                self.df[tupl[1]].reset_index(drop=True), self.df[tupl[0]].reset_index(drop=True)
+                self.df[tupl[1]].reset_index(drop=True),
+                self.df[tupl[0]].reset_index(drop=True),
             )
             # needs to be in (b,a)
             catVScont_stats.append(corr_object)
         # reset_index is necessary to make sure index don't get messed up in calculations
         cat_contDF = pd.DataFrame(
-            catVScont_stats, columns=["Predictor 1", "Predictor 2", "Corr Coef", "Corr Type"]
+            catVScont_stats,
+            columns=["Predictor 1", "Predictor 2", "Corr Coef", "Corr Type"],
         ).sort_values("Corr Coef", ascending=False)
 
         # Categorical vs Categorical predictor correlation values.
@@ -62,29 +63,36 @@ class Corr_report(read_data):
             corr_object = Correlation(
                 response=self.response, df=self.df, a=tupl[0], b=tupl[1]
             ).cat_correlation(
-                self.df[tupl[1]].reset_index(drop=True), self.df[tupl[0]].reset_index(drop=True)
+                self.df[tupl[1]].reset_index(drop=True),
+                self.df[tupl[0]].reset_index(drop=True),
             )
             # needs to be in (b,a)
             catVScat_stats.append(corr_object)
         cat_corrDF = pd.DataFrame(
-            catVScat_stats, columns=["Predictor 1", "Predictor 2", "Corr Coef", "Corr Type"]
+            catVScat_stats,
+            columns=["Predictor 1", "Predictor 2", "Corr Coef", "Corr Type"],
         ).sort_values("Corr Coef", ascending=False)
-        return cat_contDF,cat_corrDF, cont_corrDF
-    
+        return cat_contDF, cat_corrDF, cont_corrDF
+
     def corr_summary_report(self):
-        cat_contDF,cat_corrDF, cont_corrDF = self.corr_calculation()
+        cat_contDF, cat_corrDF, cont_corrDF = self.corr_calculation()
         # making data frame with all the correlation rankings
-        corr_report_df = pd.concat((cat_corrDF, cont_corrDF, cat_contDF), ignore_index=True
-                        ).sort_values('Corr Coef', ascending=False)
+        corr_report_df = pd.concat(
+            (cat_corrDF, cont_corrDF, cat_contDF), ignore_index=True
+        ).sort_values("Corr Coef", ascending=False)
         print(corr_report_df)
-        corr_report_df.to_html("../html_plots_and_tables/__CorrelationRanking_report.html", escape="html")
+        corr_report_df.to_html(
+            "../html_plots_and_tables/__CorrelationRanking_report.html", escape="html"
+        )
         return
 
     def corr_matrix_plots(self):
-        cat_contDF,cat_corrDF, cont_corrDF = self.corr_calculation()
-        ContContMatrix = Correlation(response=self.response, df=self.df).cont_vs_cont_matrix()
-        cat_cont_matrixPlot = Correlation(df=self.df, response=self.response).cat_vs_cont_matrix(
+        cat_contDF, cat_corrDF, cont_corrDF = self.corr_calculation()
+        _ = Correlation(response=self.response, df=self.df).cont_vs_cont_matrix()
+        _ = Correlation(df=self.df, response=self.response).cat_vs_cont_matrix(
             cat_contDF
         )
-        cat_corrPlots = Correlation(df=self.df, response=self.response).cat_vs_cat_matrix(cat_corrDF)
-        return 
+        _ = Correlation(df=self.df, response=self.response).cat_vs_cat_matrix(
+            cat_corrDF
+        )
+        return

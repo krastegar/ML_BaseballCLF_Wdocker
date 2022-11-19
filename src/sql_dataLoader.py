@@ -1,6 +1,7 @@
 import pandas as pd
 import sqlalchemy
 
+
 class sqlPandasSpark:
     def __init__(
         self,
@@ -27,14 +28,18 @@ class sqlPandasSpark:
             SELECT * FROM Master
         """
         df = pd.read_sql_query(query, sql_engine)
-        
+
         # making my response column : home_team_id, team_id, winner_home_or_away
         win_col = []
-        for team_id, home_id, win in zip(df['team_id'],df['home_team_id'],df['winner_home_or_away']):
-            if team_id == home_id and win =='H':
-                i=1; win_col.append(i)
+        for team_id, home_id, win in zip(
+            df["team_id"], df["home_team_id"], df["winner_home_or_away"]
+        ):
+            if team_id == home_id and win == "H":
+                i = 1
+                win_col.append(i)
             else:
-                i=0; win_col.append(i)
-        df['HomeWins'] = win_col
+                i = 0
+                win_col.append(i)
+        df["HomeWins"] = win_col
 
         return df

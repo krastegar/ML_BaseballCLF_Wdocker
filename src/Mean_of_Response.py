@@ -1,27 +1,23 @@
 import numpy as np
 import pandas as pd
-from midterm import (
-    read_data, 
-    DiffMeanResponse, 
-    make_clickable
-)
+
+from midterm import DiffMeanResponse, make_clickable, read_data
+
 
 class DifferenceOfMeans(read_data):
     def __init__(self, pred_input=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.pred = pred_input
         self.df = self.ChangeBinaryToBool()
-        
-
 
     # ------ plotting the mean of response stuff ---------
     def plot_MoR(self):
-        
+
         plot_folder_dir = "/home/bioinfo/Desktop/html_plots_and_tables"
         weighted_mr, unweighted_mr = [], []
         bin_table_links, plotly_plot_links = [], []
         pred_label, response_label = [], []
-        
+
         for pred in self.predictors:
             mr_df = DiffMeanResponse(
                 response=self.response, df=self.df, pred_input=pred
@@ -55,5 +51,7 @@ class DifferenceOfMeans(read_data):
         mr_report_df = mr_report_df.style.format(
             {"LinksToBinReport": make_clickable, "LinksToPlots": make_clickable}
         )
-        mr_report_df.to_html("../html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html")
+        mr_report_df.to_html(
+            "../html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html"
+        )
         return
