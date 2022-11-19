@@ -62,12 +62,12 @@ a.winner_home_or_away,
 SUM(a.Walk) as numberOfWalks, -- can add as many features here. 
 sum(a.Home_Run) as numberOfHomeRuns,
 sum(a.Strikeout) as numberofStrikeouts,
-sum(a.Strikeout)/NULLIF (SUM(a.Walk),0)  as Strike_Walk_Ratio,
-SUM(a.Ground_Out)/NULLIF (SUM(a.Fly_out),0) as go_fly_ratio,
-sum(a.Hit)/NULLIF (sum(a.atBat),0) as batting_average,
-sum(a.Hit_By_Pitch) as Batters_hit_pitch,
-sum(a.Home_Run)/SUM(a.Hit) as HR_ratio,
-sum(a.Hit+a.Walk+a.Hit_By_Pitch)/NULLIF(sum(a.atBat+a.Walk+a.Hit_By_Pitch+a.Sac_Fly),0) as OBP
+IFNULL(sum(a.Strikeout)/NULLIF (SUM(a.Walk),0),0)  as Strike_Walk_Ratio,
+IFNULL(SUM(a.Ground_Out)/NULLIF (SUM(a.Fly_out),0),0) as go_fly_ratio,
+IFNULL(sum(a.Hit)/NULLIF (sum(a.atBat),0),0) as batting_average,
+IFNULL(sum(a.Hit_By_Pitch),0) as Batters_hit_pitch,
+IFNULL(sum(a.Home_Run)/SUM(a.Hit),0) as HR_ratio,
+IFNULL(sum(a.Hit+a.Walk+a.Hit_By_Pitch)/NULLIF(sum(a.atBat+a.Walk+a.Hit_By_Pitch+a.Sac_Fly),0),0) as OBP
 FROM PitchGameCounts as a
 JOIN PitchGameCounts as rolling_stat
 ON a.team_id  = rolling_stat.team_id 
@@ -76,6 +76,12 @@ ON a.team_id  = rolling_stat.team_id
 	AND a.local_date
 GROUP BY rolling_stat.team_id , rolling_stat.game_id
 ORDER BY rolling_stat.local_date DESC, rolling_stat.game_id DESC, rolling_stat.team_id DESC;
+
+delete from Master where winner_home_or_away =''; 
+
+SELECT * from Master m ; 
+
+
 
 
 

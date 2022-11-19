@@ -64,7 +64,7 @@ class read_data:
         then separate the column names into their respective groups
         """
         # Making arrays to contain column names for each group
-        cont_array, cat_array, bool_array = [], [], []
+        cont_array, cat_array, bool_array= [], [], [],
 
         # Make sure that binary response column is changed into a boolean
         df = self.ChangeBinaryToBool()  # -- method introduces bug in my code
@@ -86,6 +86,9 @@ class read_data:
                     cat_array.append(col_name)
                     # print(col_name, " Not Continuous or Bool")
                     continue
+                elif data_type.dtype == 'datetime64[ns]': 
+                    df[col_name] = df[col_name].astype(int)
+                    cont_array.append(col_name)
                 else:  # Raise Error for unknown data types
                     raise TypeError(
                         "Error in column classification: Unknown column dtype"
@@ -122,7 +125,6 @@ class Cat_vs_Cont(read_data):
     Categorical Response vs Categorical Predictor
     Categorical Response vs Continuous Predictor ....etc
     It also takes the p-values of each continuous variable.
-
     This Class is mean to be used in a for loop against individual predictors
     and response
     """
@@ -153,10 +155,11 @@ class Cat_vs_Cont(read_data):
         )
         # fig_2.show()
         fig_2.write_html(
-            file=f"ViolinPlots: {self.df[self.categorical].name}",
+            file=f"../html_plots_and_tables/ViolinPlots_{self.df[self.categorical].name}.html",
             include_plotlyjs="cdn",
         )
-        return
+        file_string = f"ViolinPlots_{self.df[self.categorical].name}.html"
+        return file_string
 
     def catResponse_vs_contPredictor(self):
 
@@ -166,16 +169,17 @@ class Cat_vs_Cont(read_data):
         # fig.show()
 
         fig.write_html(
-            file=f"HistData: Predictor = {self.continuous} Response={self.response}",
+            file=f"../html_plots_and_tables/HistData_Predictor_{self.continuous}_Response={self.response}",
             include_plotlyjs="cdn",
         )
-        return
+        file_string = f"HistData_Predictor_{self.continuous}_Response={self.response}"
+        return file_string
 
     def catResponse_vs_catPredictor(self):
 
         # I am using self.continuous as a place holder for another categorical variaible
         conf_matrix = confusion_matrix(
-            self.df[self.response].astype(str), self.df[self.categorical]
+            self.df[self.response].astype(str), self.df[self.categorical].astype(str)
         )
         fig_no_relationship = go.Figure(
             data=go.Heatmap(z=conf_matrix, zmin=0, zmax=conf_matrix.max())
@@ -192,10 +196,12 @@ class Cat_vs_Cont(read_data):
             include_plotlyjs="cdn",
         )
         """
-        return fig_no_relationship.write_html(
-            file=f"HeatMap: {self.categorical} vs {self.response} ",
+        fig_no_relationship.write_html(
+            file=f"../html_plots_and_tables/HeatMap_{self.categorical}_vs_{self.response}.html",
             include_plotlyjs="cdn",
         )
+        file_string = f"HeatMap_{self.categorical}_vs_{self.response}.html"
+        return file_string
 
     def contResponse_vs_contPredictor(self):
 
@@ -219,10 +225,11 @@ class Cat_vs_Cont(read_data):
         )
         # fig.show()
         fig.write_html(
-            file=f"Linear Regression: {self.continuous}",
+            file=f"../html_plots_and_tables/Linear Regression_{self.continuous}.html",
             include_plotlyjs="cdn",
         )
-        return self.df[self.continuous].name, t_value, p_value
+        file_string = f"Linear Regression_{self.continuous}.html"
+        return self.df[self.continuous].name, t_value, p_value, file_string
 
     def BoolResponse_vs_ContPredictor(self):
 
@@ -254,11 +261,11 @@ class Cat_vs_Cont(read_data):
         # fig.show()
 
         fig.write_html(
-            file=f"Logistic_regression: {df[self.continuous].name}",
+            file=f"../html_plots_and_tables/Logistic_regression_{df[self.continuous].name}.html",
             include_plotlyjs="cdn",
         )
-
-        return df[self.continuous].name, t_value, p_value
+        file_string = f"Logistic_regression_{df[self.continuous].name}.html"
+        return df[self.continuous].name, t_value, p_value, file_string
 
 
 class RF_importance(read_data):
@@ -505,11 +512,12 @@ class DiffMeanResponse(read_data):
         )
 
         # fig.show()
-        return fig.write_html(
-            file=f"Mean of Response: response = {self.response} vs {self.pred}.html",
+        fig.write_html(
+            file=f"../html_plots_and_tables/Mean_of_Response_response_=_{self.response}_vs_{self.pred}.html",
             include_plotlyjs="cdn",
         )
-
+        file_string = f"Mean_of_Response_response_=_{self.response}_vs_{self.pred}.html"
+        return file_string
 
 class Correlation(read_data):
     """
@@ -530,11 +538,11 @@ class Correlation(read_data):
 
     def cont_cont_Corr(self):
         "Remember to set a condition for a for loop....if a==b: pass"
-
+        corr_type = "Continuous vs Continuous"
         df_a, df_b = self.get_df()
         rval, _ = pearsonr(df_a, df_b)  # gets rid of unwanted variable
 
-        return self.a, self.b, rval
+        return self.a, self.b, rval, corr_type
 
     def cat_cont_correlation_ratio(self, categories, values):
         """
@@ -545,6 +553,7 @@ class Correlation(read_data):
         :param values: Numpy array of values
         :return: correlation
         """
+        corr_type = "Continuous vs Categorical"
         f_cat, _ = pd.factorize(categories)
         cat_num = np.max(f_cat) + 1
         y_avg_array = np.zeros(cat_num)
@@ -562,7 +571,7 @@ class Correlation(read_data):
             eta = 0.0
         else:
             eta = np.sqrt(numerator / denominator)
-        return self.b, self.a, eta
+        return self.b, self.a, eta, corr_type
 
     def fill_na(self, data):
         if isinstance(data, pd.Series):
@@ -576,14 +585,12 @@ class Correlation(read_data):
         The two measures supported are:
         1. Cramer'V ( default )
         2. Tschuprow'T
-
         SOURCES:
         1.) CODE: https://github.com/MavericksDS/pycorr
         2.) Used logic from:
             https://stackoverflow.com/questions/20892799/using-pandas-calculate-cram%C3%A9rs-coefficient-matrix
             to ignore yates correction factor on 2x2
         3.) Haven't validated Tschuprow
-
         Wikipedia for Cramer's V: https://en.wikipedia.org/wiki/Cram%C3%A9r%27s_V
         Wikipedia for Tschuprow' T: https://en.wikipedia.org/wiki/Tschuprow%27s_T
         Parameters:
@@ -599,6 +606,7 @@ class Correlation(read_data):
         --------
         float in the range of [0,1]
         """
+        corr_type = "Cat vs Cat"
         corr_coeff = np.nan
         try:
             x, y = self.fill_na(x), self.fill_na(y)
@@ -625,23 +633,23 @@ class Correlation(read_data):
                     corr_coeff = np.sqrt(
                         phi2_corrected / np.sqrt((r_corrected - 1) * (c_corrected - 1))
                     )
-                    return self.a, self.b, corr_coeff
+                    return self.a, self.b, corr_coeff, corr_type
                 corr_coeff = np.sqrt(
                     phi2_corrected / min((r_corrected - 1), (c_corrected - 1))
                 )
-                return self.a, self.b, corr_coeff
+                return self.a, self.b, corr_coeff,corr_type
             if tschuprow:
                 corr_coeff = np.sqrt(phi2 / np.sqrt((r - 1) * (c - 1)))
-                return self.a, self.b, corr_coeff
+                return self.a, self.b, corr_coeff, corr_type
             corr_coeff = np.sqrt(phi2 / min((r - 1), (c - 1)))
-            return self.a, self.b, corr_coeff
+            return self.a, self.b, corr_coeff, corr_type
         except Exception as ex:
             print(ex)
             if tschuprow:
                 warnings.warn("Error calculating Tschuprow's T", RuntimeWarning)
             else:
                 warnings.warn("Error calculating Cramer's V", RuntimeWarning)
-            return self.a, self.b, corr_coeff
+            return self.a, self.b, corr_coeff, corr_type
 
     def cont_vs_cont_matrix(self):
         """
@@ -658,23 +666,24 @@ class Correlation(read_data):
         fig.show()
 
         fig.write_html(
-            file="Correlation Matrix: Continuous vs Continuous ",
+            file="../html_plots_and_tables/Correlation_Matrix_Continuous_vs_Continuous.html",
             include_plotlyjs="cdn",
         )
-        return
+        file_string = "Correlation_Matrix_Continuous_vs_Continuous"
+        return file_string
 
     def cat_vs_cont_matrix(self, corr_matrix):
         cat_catDF = corr_matrix.pivot_table(
             values="Corr Coef",
-            index="Categorical",
-            columns="Continuous",
+            index="Predictor 1",
+            columns="Predictor 2",
             aggfunc="first",
         )
         fig = px.imshow(cat_catDF)
 
         fig.update_layout(title="Correlation Matrix: Continuous / Categorical ")
         fig.write_html(
-            file="Correlation Matrix: Continuous vs Categorical ",
+            file="../html_plots_and_tables/Correlation Matrix_Continuous_vs_Categorical.html",
             include_plotlyjs="cdn",
         )
 
@@ -684,19 +693,20 @@ class Correlation(read_data):
     def cat_vs_cat_matrix(self, corr_matrix):
         cat_catDF = corr_matrix.pivot_table(
             values="Corr Coef",
-            index="Categorical 1",
-            columns="Categorical 2",
+            index="Predictor 1",
+            columns="Predictor 2",
             aggfunc="first",
         )
         fig = px.imshow(cat_catDF)
 
         fig.update_layout(title="Correlation Matrix: Categorical / Categorical ")
         fig.write_html(
-            file="Correlation Matrix: Categorical vs Categorical ",
+            file="../html_plots_and_tables/Correlation Matrix_Categorical_vs_Categorical.html",
             include_plotlyjs="cdn",
         )
         fig.show()
-        return
+        file_string = "Correlation Matrix_Categorical_vs_Categorical.html"
+        return file_string
 
 
 class BruteForce(DiffMeanResponse):
@@ -830,11 +840,11 @@ class BruteForce(DiffMeanResponse):
 
         fig.update_layout(title=f"BruteForce {title}: {pred1} vs {pred2}")
         fig.write_html(
-            file=f"BruteForce {title}: {pred1} vs {pred2}",
+            file=f"../html_plots_and_tables/BruteForce_{title}_{pred1}_vs_{pred2}.html",
             include_plotlyjs="cdn",
         )
         # fig.show()
-        file_string = f"BruteForce {title}: {pred1} vs {pred2}"
+        file_string = f"BruteForce_{title}_{pred1}_vs_{pred2}.html"
 
         return file_string
 
@@ -854,11 +864,9 @@ class BruteForce(DiffMeanResponse):
 
 def get_test_data_set(data_set_name: str = None) -> (pd.DataFrame, List[str], str):
     """Function to load a few test data sets
-
     :param:
     data_set_name : string, optional
         Data set to load
-
     :return:
     data_set : :class:`pandas.DataFrame`
         Tabular data, possibly with some preprocessing applied.
@@ -964,7 +972,7 @@ def make_clickable(val):
 
 def main():
     # getting current working dir
-    cur_dir = pathlib.Path().resolve()
+    plot_folder_dir = "/home/bioinfo/Desktop/html_plots_and_tables"
 
     # Getting DF, predictors, and response
     df, predictors, response = get_test_data_set()
@@ -997,8 +1005,9 @@ def main():
             test = Cat_vs_Cont(
                 cont_pred, response=response, df=df, predictors=predictors
             ).contResponse_vs_contPredictor()
-            stats_values.append(test)
-            file = f"{cur_dir}/Linear Regression: {cont_pred}"
+            _,_,_,file = test
+            cont_name, t_value, p_value,_ = test
+            stats_values.append((cont_name,t_value, p_value,))
             predictor_name.append(cont_pred)
             predictor_type.append("Continuous")
             plot_paths.append(file)
@@ -1009,7 +1018,8 @@ def main():
             test = Cat_vs_Cont(
                 cont_pred, response=response, df=df, predictors=predictors
             ).catResponse_vs_contPredictor()
-            file = f"{cur_dir}/HistData: Predictor = {cont_pred} Response={response}"
+
+            file = test; print("this is a file: ", file)
             predictor_name.append(cont_pred)
             predictor_type.append("Continuous")
             plot_paths.append(file)
@@ -1024,10 +1034,8 @@ def main():
                 df=df,
                 predictors=predictors,
             ).BoolResponse_vs_ContPredictor()
-            _, tval, pval = test
-            stats_values.append(test)
-            print(tval, pval)
-            file = f"{cur_dir}/Logistic_regression: {cont_pred}"
+            cont_name, tval, pval, file = test
+            stats_values.append((cont_name, tval, pval))
             predictor_name.append(cont_pred)
             predictor_type.append("Continuous")
             plot_paths.append(file)
@@ -1036,7 +1044,7 @@ def main():
         else:
             print(cont_pred, response_VarGroup)
             raise TypeError("invalid input...by me")
-
+    
     # Plotting categorical predictors with response
     for cat_pred in categorical:
         if categorical is None:
@@ -1045,7 +1053,8 @@ def main():
             test = Cat_vs_Cont(
                 categorical=cat_pred, response=response, df=df, predictors=predictors
             ).contResponse_vs_catPredictor()
-            file = f"{cur_dir}/ViolinPlots: {cat_pred}"
+            
+            file = test; print("this is a file: ", file)
             predictor_name.append(cat_pred)
             predictor_type.append("Categorical")
             plot_paths.append(file)
@@ -1057,7 +1066,7 @@ def main():
                 categorical=cat_pred, response=response, df=df, predictors=predictors
             ).catResponse_vs_catPredictor()
 
-            file = f"{cur_dir}/HeatMap: {cat_pred} vs {response}"
+            file = test; print("this is a file: ", file)
             predictor_name.append(cat_pred)
             predictor_type.append("Categorical")
             plot_paths.append(file)
@@ -1080,7 +1089,7 @@ def main():
     )
 
     HW_4_html_df = HW_4_html_df.style.format({"Links to Plots": make_clickable})
-    HW_4_html_df.to_html("__HW4_plots.html", escape="html")
+    HW_4_html_df.to_html("../html_plots_and_tables/__HW4_plots.html", escape="html")
 
     # RF regressor, obtaining feature importance
     if response_VarGroup == "continuous":
@@ -1106,7 +1115,8 @@ def main():
         feature_ranking["Feature_Importance"]
     ).tolist()
 
-    stats_df.to_html("__FeatureRanking.html")
+    stats_df.to_html("../html_plots_and_tables/__FeatureRanking.html")
+
     # ------ plotting the mean of response stuff ---------
     weighted_mr, unweighted_mr = [], []
     bin_table_links, plotly_plot_links = [], []
@@ -1116,13 +1126,13 @@ def main():
             response=response, df=df, pred_input=pred
         ).Mean_Squared_DF()
         # print(pred, '\n', MeanResponseDF)
-        mr_df.to_html(f"{pred} MR_table.html")
-        table_path = f"{cur_dir}/{pred} MR_table.html"
+        mr_df.to_html(f"{plot_folder_dir}/{pred} MR_table.html")
+        table_path = f"{plot_folder_dir}/{pred} MR_table.html"
         MeanPlots = DiffMeanResponse(
             response=response, df=df, pred_input=pred
         ).plot_Mean_diff()
-        print("using plot", MeanPlots)
-        plot_path = f"{cur_dir}/Mean of Response: response = {response} vs {pred}.html"
+        file = MeanPlots
+        plot_path = f"{plot_folder_dir}/{file}"
         unweighted_mean = np.mean(mr_df["MeanSquaredDiff"])
         weighted_mean = np.mean(mr_df["MeanSquaredDiffWeighted"])
         weighted_mr.append(weighted_mean)
@@ -1144,7 +1154,7 @@ def main():
     mr_report_df = mr_report_df.style.format(
         {"LinksToBinReport": make_clickable, "LinksToPlots": make_clickable}
     )
-    mr_report_df.to_html("__MEANofRESPONSE_report.html", escape="html")
+    mr_report_df.to_html("../html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html")
 
     # ----- getting Predictor correlation values -------
 
@@ -1162,9 +1172,8 @@ def main():
         ).cont_cont_Corr()
         contVScont_stats.append(corr_object)
     cont_corrDF = pd.DataFrame(
-        contVScont_stats, columns=["Contin 1", "Contin 2", "Corr Coef"]
+        contVScont_stats, columns=["Predictor 1", "Predictor 2", "Corr Coef", "Corr Type"]
     ).sort_values("Corr Coef", ascending=False)
-    print(cont_corrDF)
 
     # Categorical vs Cont correlation statistics
     catVScont_stats = []
@@ -1183,9 +1192,8 @@ def main():
         catVScont_stats.append(corr_object)
     # reset_index is necessary to make sure index don't get messed up in calculations
     cat_contDF = pd.DataFrame(
-        catVScont_stats, columns=["Categorical", "Continuous", "Corr Coef"]
+        catVScont_stats, columns=["Predictor 1", "Predictor 2", "Corr Coef", "Corr Type"]
     ).sort_values("Corr Coef", ascending=False)
-    print(cat_contDF)
 
     # Categorical vs Categorical predictor correlation values.
     catVScat_stats = []
@@ -1202,9 +1210,15 @@ def main():
         # needs to be in (b,a)
         catVScat_stats.append(corr_object)
     cat_corrDF = pd.DataFrame(
-        catVScat_stats, columns=["Categorical 1", "Categorical 2", "Corr Coef"]
+        catVScat_stats, columns=["Predictor 1", "Predictor 2", "Corr Coef", "Corr Type"]
     ).sort_values("Corr Coef", ascending=False)
-    print(cat_corrDF)
+
+    # making data frame with all the correlation rankings
+    corr_report_df = pd.concat((cat_corrDF, cont_corrDF, cat_contDF), ignore_index=True
+                    ).sort_values('Corr Coef', ascending=False)
+    print(corr_report_df)
+    corr_report_df.to_html("../html_plots_and_tables/__CorrelationRanking_report.html", escape="html")
+
 
     # ---- Plotting Correlation Matrix ---------
     ContContMatrix = Correlation(response=response, df=df).cont_vs_cont_matrix()
@@ -1239,11 +1253,11 @@ def main():
         df=df, response=response, list1=continuous, list2=categorical
     ).plot_brutforce("Categorical vs Continuous")
     cont_cat_brutDF["BF Matrix Plot"] = bf_cont_cat_plots
-    cont_cat_brutDF["BF Matrix Plot"] = f"{cur_dir}/" + cont_cat_brutDF[
+    cont_cat_brutDF["BF Matrix Plot"] = f"{plot_folder_dir}/" + cont_cat_brutDF[
         "BF Matrix Plot"
     ].astype(str)
     cont_cat_brutDF = cont_cat_brutDF.style.format({"BF Matrix Plot": make_clickable})
-    cont_cat_brutDF.to_html("___BF_Cont_Cat_table.html", escape="html")
+    cont_cat_brutDF.to_html(f"{plot_folder_dir}/___BF_Cont_Cat_table.html", escape="html")
 
     # BruteForce Matrix: Cat / Cat
     bf_cat_cat_plots = BruteForce(
@@ -1251,31 +1265,29 @@ def main():
     ).plot_brutforce("Categorical vs Categorical")
 
     cat_cat_brutDF["BF Matrix Plot"] = bf_cat_cat_plots
-    cat_cat_brutDF["BF Matrix Plot"] = f"{cur_dir}/" + cat_cat_brutDF[
+    cat_cat_brutDF["BF Matrix Plot"] = f"{plot_folder_dir}/" + cat_cat_brutDF[
         "BF Matrix Plot"
     ].astype(str)
     cat_cat_brutDF = cat_cat_brutDF.style.format({"BF Matrix Plot": make_clickable})
-    cat_cat_brutDF.to_html("___BF_Cat_Cat_table.html", escape="html")
+    cat_cat_brutDF.to_html(f"{plot_folder_dir}/___BF_Cat_Cat_table.html", escape="html")
 
     # BruteForce Matrix: Cont / Cont
     bf_cont_cont_plots = BruteForce(
         df=df, response=response, list1=continuous, list2=continuous
     ).plot_brutforce("Continuos vs Continuous")
     cont_cont_brutDF["BF Matrix Plot"] = bf_cont_cont_plots
-    cont_cont_brutDF["BF Matrix Plot"] = f"{cur_dir}/" + cont_cont_brutDF[
+    cont_cont_brutDF["BF Matrix Plot"] = f"{plot_folder_dir}/" + cont_cont_brutDF[
         "BF Matrix Plot"
     ].astype(str)
     cont_cont_brutDF = cont_cont_brutDF.style.format({"BF Matrix Plot": make_clickable})
-    cont_cont_brutDF.to_html("___BF_Cont_Cont_table.html", escape="html")
+    cont_cont_brutDF.to_html(f"{plot_folder_dir}/___BF_Cont_Cont_table.html", escape="html")
 
     print(
         """
         Hi professor, I want to mention a few things: \
-
         1. All of the reports are in a html file that start with '__blah'
         2. For some reasons the links to the plots work with Firefox web_browser and not chrome
         3. I wasn't sure if we were supposed to make links to the correlation matrix plots, so I just used fig_show()
-
             If you can....go easy on me.....have mercy...thanks
         """
     )
