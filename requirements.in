@@ -2,9 +2,11 @@ numpy
 pandas
 plotly
 scipy
-sklearn
+scikit-learn
 pyspark
 statsmodels
 seaborn
 sqlalchemy
-mariadb
+mariadb==1.0.9
+gunicorn
+contourpy

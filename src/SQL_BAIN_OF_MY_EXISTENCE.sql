@@ -19,12 +19,12 @@ ADD CONSTRAINT PRIMARY KEY(ID);
 DROP TABLE IF EXISTS Hist_Avg;
 CREATE TABLE Hist_Avg
 SELECT batter, SUM(Hit)/NULLIF (SUM(atBat),0) as Batting_Avg
-FROM Maste
+FROM Master
 GROUP BY batter; 
 
 -- Annual Avg
 DROP TABLE IF EXISTS Annual_Avg;
-CREATE TABLE Hist_Avg
+CREATE TABLE Annual_Avg
 SELECT batter, SUM(Hit)/NULLIF (SUM(atBat),0) as Batting_Avg,
 YEAR (local_date) as year
 FROM Master
@@ -76,9 +76,10 @@ ON t.batter = rolling_avg.batter
 	AND t.local_date > rolling_avg.local_date 
 	AND rolling_avg.local_date BETWEEN t.local_date - INTERVAL 100 DAY 
 	AND t.local_date
+WHERE rolling_avg.game_id = 12560
 GROUP BY rolling_avg.batter
 ORDER BY rolling_avg.local_date DESC;
 
 SELECT *
-FROM temp ;
+FROM Rol_AVG;
 

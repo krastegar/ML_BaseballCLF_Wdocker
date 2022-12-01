@@ -81,8 +81,10 @@ class Corr_report(read_data):
             (cat_corrDF, cont_corrDF, cat_contDF), ignore_index=True
         ).sort_values("Corr Coef", ascending=False)
         print(corr_report_df)
+        curr_path = self.get_workingDir()
         corr_report_df.to_html(
-            "../html_plots_and_tables/__CorrelationRanking_report.html", escape="html"
+            f"{curr_path}/html_plots_and_tables/__CorrelationRanking_report.html",
+            escape="html",
         )
         return
 

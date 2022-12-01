@@ -1,4 +1,5 @@
 import itertools
+import os
 import random
 import sys
 import warnings
@@ -34,6 +35,10 @@ class read_data:
 
     def dataframe(self):
         return self.df, print(self.df)
+
+    def get_workingDir(self):
+        curr_path = str(os.path.abspath(os.getcwd()))
+        return curr_path
 
     def ChangeBinaryToBool(self):
 
@@ -156,9 +161,9 @@ class Cat_vs_Cont(read_data):
             xaxis_title=f"{self.df[self.categorical].name}",
             yaxis_title=f"{self.df[self.response].name}",
         )
-        # fig_2.show()
+        curr_path = self.get_workingDir()
         fig_2.write_html(
-            file=f"../html_plots_and_tables/ViolinPlots_{self.df[self.categorical].name}.html",
+            file=f"{curr_path}/html_plots_and_tables/ViolinPlots_{self.df[self.categorical].name}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"ViolinPlots_{self.df[self.categorical].name}.html"
@@ -170,9 +175,9 @@ class Cat_vs_Cont(read_data):
         group_labels = [f"{self.df[self.response]}"]  # name of the dataset
         fig = ff.create_distplot(hist_data, group_labels)
         # fig.show()
-
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"../html_plots_and_tables/HistData_Predictor_{self.continuous}_Response={self.response}",
+            file=f"{curr_path}/html_plots_and_tables/HistData_Predictor_{self.continuous}_Response={self.response}",
             include_plotlyjs="cdn",
         )
         file_string = f"HistData_Predictor_{self.continuous}_Response={self.response}"
@@ -193,14 +198,9 @@ class Cat_vs_Cont(read_data):
             yaxis_title=f"{self.df[self.categorical].name}",
         )
         # fig_no_relationship.show()
-        """
+        curr_path = self.get_workingDir()
         fig_no_relationship.write_html(
-            file=f"HeatMap: {self.df[self.categorical].name} vs {self.df[self.response].name} ",
-            include_plotlyjs="cdn",
-        )
-        """
-        fig_no_relationship.write_html(
-            file=f"../html_plots_and_tables/HeatMap_{self.categorical}_vs_{self.response}.html",
+            file=f"{curr_path}/html_plots_and_tables/HeatMap_{self.categorical}_vs_{self.response}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"HeatMap_{self.categorical}_vs_{self.response}.html"
@@ -226,9 +226,9 @@ class Cat_vs_Cont(read_data):
             xaxis_title=f"{self.continuous}",
             yaxis_title=f"{self.response}",
         )
-        # fig.show()
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"../html_plots_and_tables/Linear Regression_{self.continuous}.html",
+            file=f"{curr_path}/html_plots_and_tables/Linear Regression_{self.continuous}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"Linear Regression_{self.continuous}.html"
@@ -262,9 +262,9 @@ class Cat_vs_Cont(read_data):
             yaxis_title=f"{df[self.response].name}",
         )
         # fig.show()
-
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"../html_plots_and_tables/Logistic_regression_{df[self.continuous].name}.html",
+            file=f"{curr_path}/html_plots_and_tables/Logistic_regression_{df[self.continuous].name}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"Logistic_regression_{df[self.continuous].name}.html"
@@ -514,9 +514,9 @@ class DiffMeanResponse(read_data):
             tickvals=mean_diff_df["BinCenters"], ticktext=mean_diff_df["Bin"]
         )
 
-        # fig.show()
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"../html_plots_and_tables/Mean_of_Response_response_=_{self.response}_vs_{self.pred}.html",
+            file=f"{curr_path}/html_plots_and_tables/Mean_of_Response_response_=_{self.response}_vs_{self.pred}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"Mean_of_Response_response_=_{self.response}_vs_{self.pred}.html"
@@ -669,8 +669,9 @@ class Correlation(read_data):
         fig.update_layout(title="Correlation Matrix: Continuous / Continuous ")
         fig.show()
 
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file="../html_plots_and_tables/Correlation_Matrix_Continuous_vs_Continuous.html",
+            file=f"{curr_path}//html_plots_and_tables/Correlation_Matrix_Continuous_vs_Continuous.html",
             include_plotlyjs="cdn",
         )
         file_string = "Correlation_Matrix_Continuous_vs_Continuous"
@@ -684,10 +685,10 @@ class Correlation(read_data):
             aggfunc="first",
         )
         fig = px.imshow(cat_catDF)
-
         fig.update_layout(title="Correlation Matrix: Continuous / Categorical ")
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file="../html_plots_and_tables/Correlation Matrix_Continuous_vs_Categorical.html",
+            file=f"{curr_path}/html_plots_and_tables/Correlation Matrix_Continuous_vs_Categorical.html",
             include_plotlyjs="cdn",
         )
 
@@ -704,8 +705,9 @@ class Correlation(read_data):
         fig = px.imshow(cat_catDF)
 
         fig.update_layout(title="Correlation Matrix: Categorical / Categorical ")
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file="../html_plots_and_tables/Correlation Matrix_Categorical_vs_Categorical.html",
+            file=f"{curr_path}/html_plots_and_tables//Correlation Matrix_Categorical_vs_Categorical.html",
             include_plotlyjs="cdn",
         )
         fig.show()
@@ -843,8 +845,9 @@ class BruteForce(DiffMeanResponse):
         fig = px.imshow(brutforce_df)
 
         fig.update_layout(title=f"BruteForce {title}: {pred1} vs {pred2}")
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"../html_plots_and_tables/BruteForce_{title}_{pred1}_vs_{pred2}.html",
+            file=f"{curr_path}/html_plots_and_tables/BruteForce_{title}_{pred1}_vs_{pred2}.html",
             include_plotlyjs="cdn",
         )
         # fig.show()
@@ -975,15 +978,14 @@ def make_clickable(val):
 
 
 def main():
-    # getting current working dir
-    plot_folder_dir = "/home/bioinfo/Desktop/html_plots_and_tables"
 
     # Getting DF, predictors, and response
     df, predictors, response = get_test_data_set()
     # read in object
     object = read_data(response=response, df=df, predictors=predictors)
     object.dataframe()
-
+    curr_dir = object.get_workingDir()
+    plot_folder_dir = f"{curr_dir}/html_plots_and_tables"
     # split predictor columns into respective groups
     # and response variable category
     continuous, categorical, boolean = object.checkColIsContOrCat()
@@ -1102,7 +1104,9 @@ def main():
     )
 
     HW_4_html_df = HW_4_html_df.style.format({"Links to Plots": make_clickable})
-    HW_4_html_df.to_html("../html_plots_and_tables/__HW4_plots.html", escape="html")
+    HW_4_html_df.to_html(
+        f"{curr_dir}/html_plots_and_tables/__HW4_plots.html", escape="html"
+    )
 
     # RF regressor, obtaining feature importance
     if response_VarGroup == "continuous":
@@ -1128,7 +1132,7 @@ def main():
         feature_ranking["Feature_Importance"]
     ).tolist()
 
-    stats_df.to_html("../html_plots_and_tables/__FeatureRanking.html")
+    stats_df.to_html(f"{curr_dir}/html_plots_and_tables/__FeatureRanking.html")
 
     # ------ plotting the mean of response stuff ---------
     weighted_mr, unweighted_mr = [], []
@@ -1168,7 +1172,7 @@ def main():
         {"LinksToBinReport": make_clickable, "LinksToPlots": make_clickable}
     )
     mr_report_df.to_html(
-        "../html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html"
+        f"{curr_dir}/html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html"
     )
 
     # ----- getting Predictor correlation values -------
@@ -1236,7 +1240,8 @@ def main():
     ).sort_values("Corr Coef", ascending=False)
     print(corr_report_df)
     corr_report_df.to_html(
-        "../html_plots_and_tables/__CorrelationRanking_report.html", escape="html"
+        f"{curr_dir}/html_plots_and_tables/__CorrelationRanking_report.html",
+        escape="html",
     )
 
     # ---- Plotting Correlation Matrix ---------

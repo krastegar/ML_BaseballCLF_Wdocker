@@ -12,8 +12,8 @@ class DifferenceOfMeans(read_data):
 
     # ------ plotting the mean of response stuff ---------
     def plot_MoR(self):
-
-        plot_folder_dir = "/home/bioinfo/Desktop/html_plots_and_tables"
+        curr_path = self.get_workingDir()
+        plot_folder_dir = f"{curr_path}/html_plots_and_tables"
         weighted_mr, unweighted_mr = [], []
         bin_table_links, plotly_plot_links = [], []
         pred_label, response_label = [], []
@@ -52,6 +52,6 @@ class DifferenceOfMeans(read_data):
             {"LinksToBinReport": make_clickable, "LinksToPlots": make_clickable}
         )
         mr_report_df.to_html(
-            "../html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html"
+            "html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html"
         )
         return

@@ -18,8 +18,13 @@ def main():
     response = "HomeWins"
     predictors = [i for i in list(df.columns) if response not in i]
     dataset = TestDatasets()
-    _, _, _ = dataset.get_test_data_set()  # df, predictors, response
+    (
+        _,
+        _,
+        _,
+    ) = dataset.get_test_data_set()  # replace '_' w/ df, predictors, response
     # place holder for testing diff df
+
     # HW_4 plots
     hw_4 = Cont_Cat_stats_plots(response=response, df=df, predictors=predictors)
     _, _, _, _, _, _ = hw_4.predictor_plots()
@@ -42,7 +47,7 @@ def main():
     _ = BF_summary(response=response, df=df, predictors=predictors).bruteForce_summary()
 
     # Train test split
-    _ = "dummy"
+
     continuous, categorical, _ = read_data(
         response=response, df=df, predictors=predictors
     ).checkColIsContOrCat()
@@ -52,20 +57,8 @@ def main():
         predictors=predictors,
         list1=continuous,
         list2=categorical,
-        local_date=1,
+        local_date=0,  # change this for sql data
     ).trainer_tester()
-    # Analysis:
-    print(
-        """
-    Comparing precision, recall, f1-score, and accuracy.
-    We can see that the gradient boosted model has scored higher on
-    all metrics.
-
-    Notes on Assignment:
-    I listened to your feed back and all of the plots and tables are in a folder
-    called "html_plots_and_tables" in 1 directory outside this one
-    """
-    )
 
     return
 

@@ -1,0 +1,31 @@
+version: "3.3"
+
+services:
+  mariadb:
+    image: lscr.io/linuxserver/mariadb:latest
+    container_name: mariadb
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - MYSQL_ROOT_PASSWORD=ROOT_ACCESS_PASSWORD
+      - TZ=Europe/London
+
+    volumes:
+      - .db:/config
+
+    ports:
+      - 4308:3306 # dont use same port as sys
+    restart: unless-stopped
+
+  SQL_ROL_AVG:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: baseball
+    ports:
+      - "5001:8080"
+    environment:
+      PORT: "8080"
+    restart: unless-stopped
+    volumes:
+      - "/home/bioinfo/Desktop/baseball.sql:/app/baseball.sql"

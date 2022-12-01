@@ -148,7 +148,9 @@ class Cont_Cat_stats_plots(
                 "Links to Plots": plot_paths,
             }
         )
-
+        curr_path = self.get_workingDir()
         HW_4_html_df = HW_4_html_df.style.format({"Links to Plots": make_clickable})
-        HW_4_html_df.to_html("../html_plots_and_tables/__HW4_plots.html", escape="html")
+        HW_4_html_df.to_html(
+            f"{curr_path}/html_plots_and_tables/__HW4_plots.html", escape="html"
+        )
         return

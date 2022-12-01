@@ -32,7 +32,8 @@ class BF_summary(read_data):
         cont_cont_brutDF, cont_cat_brutDF, cat_cat_brutDF = self.bruteforce_df()
         continuous, categorical, _ = self.checkColIsContOrCat()
 
-        plot_folder_dir = "/home/bioinfo/Desktop/html_plots_and_tables"
+        curr_path = self.get_workingDir()
+        plot_folder_dir = f"{curr_path}/html_plots_and_tables"
         bf_cont_cat_plots = BruteForce(
             df=self.df, response=self.response, list1=continuous, list2=categorical
         ).plot_brutforce("Categorical vs Continuous")
