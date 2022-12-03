@@ -78,7 +78,7 @@ ON t.batter = rolling_avg.batter
 	AND t.local_date
 WHERE rolling_avg.game_id = 12560
 GROUP BY rolling_avg.batter
-ORDER BY rolling_avg.local_date DESC;
+ORDER BY average DESC;
 
 SELECT *
 FROM Rol_AVG;
