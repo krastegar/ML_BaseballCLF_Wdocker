@@ -1,9 +1,10 @@
 FROM python:3.9.7
  
 ENV APP_HOME /app
+ENV RESULT /result
 WORKDIR $APP_HOME
 ENV PYTHONPATH /
- 
+
 # Get necessary system packages
 RUN apt-get update \
   && apt-get install --no-install-recommends --yes \
@@ -19,7 +20,7 @@ COPY requirements.txt .
 RUN pip3 install --compile --no-cache-dir -r requirements.txt
  
 # Copy over code
-COPY src/SQL_BAIN_OF_MY_EXISTENCE.sql src/SQL_BAIN_OF_MY_EXISTENCE.sql
+ADD ./src/ ${APP_HOME}/src
 COPY database_import.sh .
 
 # Run database import

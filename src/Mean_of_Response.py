@@ -19,19 +19,35 @@ class DifferenceOfMeans(read_data):
         pred_label, response_label = [], []
 
         for pred in self.predictors:
+
+            # This is to get the mean of response ranking tables, i.e) pandas df
+            # for each predictor (pred)
             mr_df = DiffMeanResponse(
                 response=self.response, df=self.df, pred_input=pred
             ).Mean_Squared_DF()
-            # print(pred, '\n', MeanResponseDF)
+
+            # creating html table from mean of response ranking tables
+            # for each predictor
             mr_df.to_html(f"{plot_folder_dir}/{pred} MR_table.html")
+
+            # getting relative paths for each table to put into final report
+            # table
             table_path = f"{plot_folder_dir}/{pred} MR_table.html"
+
+            # Getting file paths to plots that were generated in mean of response
+            # analysis
             MeanPlots = DiffMeanResponse(
                 response=self.response, df=self.df, pred_input=pred
             ).plot_Mean_diff()
             file = MeanPlots
             plot_path = f"{plot_folder_dir}/{file}"
-            unweighted_mean = np.mean(mr_df["MeanSquaredDiff"])
-            weighted_mean = np.mean(mr_df["MeanSquaredDiffWeighted"])
+
+            # calculating summations of squared differences
+            unweighted_mean = np.sum(mr_df["MeanSquaredDiff"])
+            weighted_mean = np.sum(mr_df["MeanSquaredDiffWeighted"])
+
+            # Puttting all file paths to plots and tables into one df with
+            # the rest of the calculations
             weighted_mr.append(weighted_mean)
             unweighted_mr.append(unweighted_mean)
             bin_table_links.append(table_path)
@@ -48,9 +64,13 @@ class DifferenceOfMeans(read_data):
                 "LinksToPlots": plotly_plot_links,
             }
         ).sort_values("WeightedMeanofResponse", ascending=False)
+
+        # making the links clickable
         mr_report_df = mr_report_df.style.format(
             {"LinksToBinReport": make_clickable, "LinksToPlots": make_clickable}
         )
+
+        # making final df report into an html table
         mr_report_df.to_html(
             "html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html"
         )

@@ -15,7 +15,7 @@ def main():
 
     # getting dataframe of my features from sql
     df = sqlPandasSpark().sql_to_pandas()
-    response = "HomeWins"
+    response = "Home_Team_Wins"
     predictors = [i for i in list(df.columns) if response not in i]
     dataset = TestDatasets()
     (
@@ -24,7 +24,7 @@ def main():
         _,
     ) = dataset.get_test_data_set()  # replace '_' w/ df, predictors, response
     # place holder for testing diff df
-
+    # print(predictors)
     # HW_4 plots
     hw_4 = Cont_Cat_stats_plots(response=response, df=df, predictors=predictors)
     _, _, _, _, _, _ = hw_4.predictor_plots()
@@ -51,15 +51,21 @@ def main():
     continuous, categorical, _ = read_data(
         response=response, df=df, predictors=predictors
     ).checkColIsContOrCat()
-    _, _ = TrainTestModel(
+    model_obj = TrainTestModel(
         response=response,
         df=df,
         predictors=predictors,
         list1=continuous,
         list2=categorical,
-        local_date=0,  # change this for sql data
-    ).trainer_tester()
+        local_date=0,  # change this for non sql data
+    )
+    _ = model_obj.trainer_tester()
 
+    _ = model_obj.Feature_Importance()
+
+    _ = model_obj.model_evaluation()
+
+    _ = model_obj.plot_feature_rank()
     return
 
 

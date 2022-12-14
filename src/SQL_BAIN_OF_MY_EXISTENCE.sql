@@ -10,6 +10,7 @@ SELECT bc.game_id, batter, atBat, Hit, team_id, local_date
 FROM batter_counts bc 
 JOIN game g 
 ON bc.game_id = g.game_id; 
+
 -- Index for Master Table for faster query
 ALTER TABLE Master
 ADD ID INT NOT NULL AUTO_INCREMENT, 

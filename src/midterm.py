@@ -280,7 +280,7 @@ class RF_importance(read_data):
 
     def __init__(
         self,
-        regressor=1,
+        regressor=0,
         continuous=None,
         categorical=None,
         boolean=None,
@@ -472,7 +472,7 @@ class DiffMeanResponse(read_data):
 
     def plot_Mean_diff(self):
 
-        mean_diff_df = self.Mean_Squared_DF()
+        mean_diff_df = self.Mean_Squared_DF().sort_values("BinCenters", ascending=True)
         fig = go.Figure(
             layout=go.Layout(
                 title="Combined Layout",
@@ -823,26 +823,43 @@ class BruteForce(DiffMeanResponse):
 
         return pred1, pred2, mean_square_diff, weighted_diff, weighted_means
 
-    def BF_df(self):
-        cont_cat_bruteforce = []
+    def BF_df(self, title):
+        """
+        Function is the body of html bruteforce report. It calculates bruteforce
+        for every pair in list of predictors and gets both weighted and unweighted
+        scores of each bin-pair and puts it into a pandas df
+        """
+        bruteforce_df = []
         for tupl in itertools.product(self.list1, self.list2):
             if tupl[0] == tupl[1]:
                 continue
             BruF = self.brute_force_2d(pred1=tupl[0], pred2=tupl[1])
             pred1, pred2, mean_square_diff, weighted_diff, _ = BruF
-            mean_unweighted, mean_weighted = np.mean(mean_square_diff), np.mean(
+            mean_unweighted, mean_weighted = np.sum(mean_square_diff), np.sum(
                 weighted_diff
             )
-            cont_cat_bruteforce.append((pred1, pred2, mean_unweighted, mean_weighted))
+            _, _, _, _, weighted_means_matrix = BruF
+            file_paths = self.plot_func(
+                weighted_means_matrix, pred1=tupl[0], pred2=tupl[1], title=title
+            )
+            bruteforce_df.append(
+                (pred1, pred2, mean_unweighted, mean_weighted, file_paths)
+            )
         BF_cont_cat_df = pd.DataFrame(
-            cont_cat_bruteforce, columns=["Pred 1", "Pred 2", "Unweighted", "Weighted"]
+            bruteforce_df,
+            columns=["Pred 1", "Pred 2", "Unweighted", "Weighted", "LinksToPlots"],
         )
 
         return BF_cont_cat_df.sort_values("Weighted", ascending=False)
 
-    def plot_func(self, brutforce_df, pred1, pred2, title):
+    def plot_func(self, weighted_means_matrix, pred1, pred2, title):
         # title should be either, catVScat, catVScont, contVScont
-        fig = px.imshow(brutforce_df)
+        # I need pred1, pred2, title input for file string path
+        # whole puprose of this function is to get file paths which
+        # can be used for html table with links
+
+        # this figure is plotting 2D weighted means matrix
+        fig = px.imshow(weighted_means_matrix)
 
         fig.update_layout(title=f"BruteForce {title}: {pred1} vs {pred2}")
         curr_path = self.get_workingDir()
@@ -854,19 +871,6 @@ class BruteForce(DiffMeanResponse):
         file_string = f"BruteForce_{title}_{pred1}_vs_{pred2}.html"
 
         return file_string
-
-    def plot_brutforce(self, title):
-        file_names = []
-        for tupl in itertools.product(self.list1, self.list2):
-            if tupl[0] == tupl[1]:
-                continue
-            brutDF = self.brute_force_2d(pred1=tupl[0], pred2=tupl[1])
-            _, _, _, _, bf_df = brutDF
-            cont_cat_brutDF = self.plot_func(
-                bf_df, pred1=tupl[0], pred2=tupl[1], title=title
-            )
-            file_names.append(cont_cat_brutDF)
-        return file_names
 
 
 def get_test_data_set(data_set_name: str = None) -> (pd.DataFrame, List[str], str):
@@ -974,7 +978,7 @@ def check_list(list1, list2):
 
 def make_clickable(val):
     # target _blank to open new window
-    return '<a target="_blank" href="{}">{}</a>'.format(val, val)
+    return '<a target="_blank" href="{}"></a>'.format(val, val)
 
 
 def main():
@@ -1004,6 +1008,7 @@ def main():
         [],
         [],
     )
+
     for cont_pred in continuous:
         if continuous is None:
             continue

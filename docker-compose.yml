@@ -9,13 +9,10 @@ services:
       - PGID=1000
       - MYSQL_ROOT_PASSWORD=ROOT_ACCESS_PASSWORD
       - TZ=Europe/London
-
     volumes:
       - .db:/config
-
     ports:
-      - 4308:3306 # dont use same port as sys
-    restart: unless-stopped
+      - 4308:3306 # dont use same port as system
 
   SQL_ROL_AVG:
     build:
@@ -26,6 +23,6 @@ services:
       - "5001:8080"
     environment:
       PORT: "8080"
-    restart: unless-stopped
     volumes:
-      - "/home/bioinfo/Desktop/baseball.sql:/app/baseball.sql"
+      - "./baseball.sql:/app/baseball.sql" # need to work on mounting volume from relative path
+      - ./html_plots_and_tables:/app/html_plots_and_tables

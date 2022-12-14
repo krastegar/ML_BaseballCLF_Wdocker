@@ -26,8 +26,7 @@ class Cont_Cat_stats_plots(
             [],
             [],
         )
-        continuous_pred, categorical, boolean = self.checkColIsContOrCat()
-
+        continuous_pred, categorical, _ = self.checkColIsContOrCat()
         response_VarGroup = self.get_col_type(self.response)
         for cont_pred in continuous_pred:
             if continuous_pred is None:

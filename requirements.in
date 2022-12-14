@@ -10,3 +10,4 @@ sqlalchemy
 mariadb==1.0.9
 gunicorn
 contourpy
+Jinja2

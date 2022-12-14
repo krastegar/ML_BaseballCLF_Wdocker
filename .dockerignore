@@ -156,3 +156,4 @@ static
 # Project related ignores (place project related ignores below here)
 .db/ 
 html_plots_and_tables/
+baseball/
