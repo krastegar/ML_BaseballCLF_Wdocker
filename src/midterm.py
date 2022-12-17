@@ -37,8 +37,11 @@ class read_data:
         return self.df, print(self.df)
 
     def get_workingDir(self):
-        curr_path = str(os.path.abspath(os.getcwd()))
-        return curr_path
+
+        # path = Path(__file__).resolve().parent
+        curr_path = str(os.path.abspath(os.getcwd())) + "/"
+        _ = os.path.relpath(curr_path) + "/"
+        return ""
 
     def ChangeBinaryToBool(self):
 
@@ -163,7 +166,7 @@ class Cat_vs_Cont(read_data):
         )
         curr_path = self.get_workingDir()
         fig_2.write_html(
-            file=f"{curr_path}/html_plots_and_tables/ViolinPlots_{self.df[self.categorical].name}.html",
+            file=f"{curr_path}html_plots_and_tables/subplots/ViolinPlots_{self.df[self.categorical].name}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"ViolinPlots_{self.df[self.categorical].name}.html"
@@ -175,9 +178,8 @@ class Cat_vs_Cont(read_data):
         group_labels = [f"{self.df[self.response]}"]  # name of the dataset
         fig = ff.create_distplot(hist_data, group_labels)
         # fig.show()
-        curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"{curr_path}/html_plots_and_tables/HistData_Predictor_{self.continuous}_Response={self.response}",
+            file=f"html_plots_and_tables/subplots/HistData_Predictor_{self.continuous}_Response={self.response}",
             include_plotlyjs="cdn",
         )
         file_string = f"HistData_Predictor_{self.continuous}_Response={self.response}"
@@ -200,7 +202,7 @@ class Cat_vs_Cont(read_data):
         # fig_no_relationship.show()
         curr_path = self.get_workingDir()
         fig_no_relationship.write_html(
-            file=f"{curr_path}/html_plots_and_tables/HeatMap_{self.categorical}_vs_{self.response}.html",
+            file=f"{curr_path}html_plots_and_tables/subplots/HeatMap_{self.categorical}_vs_{self.response}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"HeatMap_{self.categorical}_vs_{self.response}.html"
@@ -228,7 +230,7 @@ class Cat_vs_Cont(read_data):
         )
         curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"{curr_path}/html_plots_and_tables/Linear Regression_{self.continuous}.html",
+            file=f"{curr_path}html_plots_and_tables/subplots/Linear Regression_{self.continuous}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"Linear Regression_{self.continuous}.html"
@@ -264,10 +266,11 @@ class Cat_vs_Cont(read_data):
         # fig.show()
         curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"{curr_path}/html_plots_and_tables/Logistic_regression_{df[self.continuous].name}.html",
+            file=f"{curr_path}html_plots_and_tables/subplots/Logistic_regression_{df[self.continuous].name}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"Logistic_regression_{df[self.continuous].name}.html"
+
         return df[self.continuous].name, t_value, p_value, file_string
 
 
@@ -514,9 +517,8 @@ class DiffMeanResponse(read_data):
             tickvals=mean_diff_df["BinCenters"], ticktext=mean_diff_df["Bin"]
         )
 
-        curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"{curr_path}/html_plots_and_tables/Mean_of_Response_response_=_{self.response}_vs_{self.pred}.html",
+            file=f"html_plots_and_tables/subplots/Mean_of_Response_response_=_{self.response}_vs_{self.pred}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"Mean_of_Response_response_=_{self.response}_vs_{self.pred}.html"
@@ -667,11 +669,11 @@ class Correlation(read_data):
         fig = px.imshow(cont_matrix)
 
         fig.update_layout(title="Correlation Matrix: Continuous / Continuous ")
-        fig.show()
+        # fig.show()
 
         curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"{curr_path}//html_plots_and_tables/Correlation_Matrix_Continuous_vs_Continuous.html",
+            file=f"{curr_path}html_plots_and_tables/Correlation_Matrix_Continuous_vs_Continuous.html",
             include_plotlyjs="cdn",
         )
         file_string = "Correlation_Matrix_Continuous_vs_Continuous"
@@ -688,11 +690,11 @@ class Correlation(read_data):
         fig.update_layout(title="Correlation Matrix: Continuous / Categorical ")
         curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"{curr_path}/html_plots_and_tables/Correlation Matrix_Continuous_vs_Categorical.html",
+            file=f"{curr_path}html_plots_and_tables/Correlation Matrix_Continuous_vs_Categorical.html",
             include_plotlyjs="cdn",
         )
 
-        fig.show()
+        # fig.show()
         return
 
     def cat_vs_cat_matrix(self, corr_matrix):
@@ -707,10 +709,10 @@ class Correlation(read_data):
         fig.update_layout(title="Correlation Matrix: Categorical / Categorical ")
         curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"{curr_path}/html_plots_and_tables//Correlation Matrix_Categorical_vs_Categorical.html",
+            file=f"{curr_path}html_plots_and_tables/Correlation Matrix_Categorical_vs_Categorical.html",
             include_plotlyjs="cdn",
         )
-        fig.show()
+        # fig.show()
         file_string = "Correlation Matrix_Categorical_vs_Categorical.html"
         return file_string
 
@@ -864,7 +866,7 @@ class BruteForce(DiffMeanResponse):
         fig.update_layout(title=f"BruteForce {title}: {pred1} vs {pred2}")
         curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"{curr_path}/html_plots_and_tables/BruteForce_{title}_{pred1}_vs_{pred2}.html",
+            file=f"{curr_path}html_plots_and_tables/subplots/BruteForce_{title}_{pred1}_vs_{pred2}.html",
             include_plotlyjs="cdn",
         )
         # fig.show()
@@ -977,19 +979,24 @@ def check_list(list1, list2):
 
 
 def make_clickable(val):
-    # target _blank to open new window
-    return '<a target="_blank" href="{}"></a>'.format(val, val)
+    # Set the path to the folder containing the HTML files
+    path = os.getcwd()
+    base = os.path.join(path, "html_plots_and_tables/subplots")
+    # Create a link that is relative to the current working directory
+    return '<a target="_blank" href="{}">{}</a>'.format(os.path.join(base, val), val)
+    # need second bracket after the fhref="{}" >
+    # or else the links will disappear
 
 
 def main():
 
     # Getting DF, predictors, and response
-    df, predictors, response = get_test_data_set()
+    df, predictors, response = get_test_data_set("tips")
     # read in object
     object = read_data(response=response, df=df, predictors=predictors)
     object.dataframe()
     curr_dir = object.get_workingDir()
-    plot_folder_dir = f"{curr_dir}/html_plots_and_tables"
+    plot_folder_dir = f"{curr_dir}html_plots_and_tables/subplots"
     # split predictor columns into respective groups
     # and response variable category
     continuous, categorical, boolean = object.checkColIsContOrCat()
@@ -1097,7 +1104,7 @@ def main():
             raise AttributeError(
                 "Something is not being plotted correctly, issue with class?"
             )
-
+    print(plot_paths)
     HW_4_html_df = pd.DataFrame(
         {
             "Predictor Type": predictor_type,
@@ -1107,10 +1114,10 @@ def main():
             "Links to Plots": plot_paths,
         }
     )
-
+    # print(HW_4_html_df)
     HW_4_html_df = HW_4_html_df.style.format({"Links to Plots": make_clickable})
     HW_4_html_df.to_html(
-        f"{curr_dir}/html_plots_and_tables/__HW4_plots.html", escape="html"
+        f"{curr_dir}html_plots_and_tables/__HW4_plots.html", escape="html"
     )
 
     # RF regressor, obtaining feature importance
@@ -1137,7 +1144,7 @@ def main():
         feature_ranking["Feature_Importance"]
     ).tolist()
 
-    stats_df.to_html(f"{curr_dir}/html_plots_and_tables/__FeatureRanking.html")
+    stats_df.to_html(f"{curr_dir}html_plots_and_tables/__FeatureRanking.html")
 
     # ------ plotting the mean of response stuff ---------
     weighted_mr, unweighted_mr = [], []
@@ -1154,13 +1161,12 @@ def main():
             response=response, df=df, pred_input=pred
         ).plot_Mean_diff()
         file = MeanPlots
-        plot_path = f"{plot_folder_dir}/{file}"
         unweighted_mean = np.mean(mr_df["MeanSquaredDiff"])
         weighted_mean = np.mean(mr_df["MeanSquaredDiffWeighted"])
         weighted_mr.append(weighted_mean)
         unweighted_mr.append(unweighted_mean)
         bin_table_links.append(table_path)
-        plotly_plot_links.append(plot_path)
+        plotly_plot_links.append(file)
         pred_label.append(pred)
         response_label.append(response)
     mr_report_df = pd.DataFrame(
@@ -1177,7 +1183,7 @@ def main():
         {"LinksToBinReport": make_clickable, "LinksToPlots": make_clickable}
     )
     mr_report_df.to_html(
-        f"{curr_dir}/html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html"
+        f"{curr_dir}html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html"
     )
 
     # ----- getting Predictor correlation values -------
@@ -1245,7 +1251,7 @@ def main():
     ).sort_values("Corr Coef", ascending=False)
     print(corr_report_df)
     corr_report_df.to_html(
-        f"{curr_dir}/html_plots_and_tables/__CorrelationRanking_report.html",
+        f"{curr_dir}html_plots_and_tables/__CorrelationRanking_report.html",
         escape="html",
     )
 
@@ -1261,58 +1267,43 @@ def main():
     # BruteForce Cont/ Cat:
     cont_cat_brutDF = BruteForce(
         df=df, response=response, list1=categorical, list2=continuous
-    ).BF_df()
+    ).BF_df("Cont vs Cat")
     # print('BruteForce Cont/ Cat: \n',cont_cat_brutDF)
 
     # BruteForce Cat / Cat:
     cat_cat_brutDF = BruteForce(
         df=df, response=response, list1=categorical, list2=categorical
-    ).BF_df()
+    ).BF_df("Cat vs Cat")
     # print('Cat / Cat \n',cat_cat_brutDF)
 
     # BruteForce Cont / Cont:
     cont_cont_brutDF = BruteForce(
         df=df, response=response, list1=continuous, list2=continuous
-    ).BF_df()
+    ).BF_df("Cont vs Cont")
     # print("Cont / Cont \n",cont_cont_brutDF)
 
     # ------ Brute Force Matrix Plots ---------
     # BruteForce Matrix: Cat / Cont
-    bf_cont_cat_plots = BruteForce(
-        df=df, response=response, list1=continuous, list2=categorical
-    ).plot_brutforce("Categorical vs Continuous")
-    cont_cat_brutDF["BF Matrix Plot"] = bf_cont_cat_plots
-    cont_cat_brutDF["BF Matrix Plot"] = f"{plot_folder_dir}/" + cont_cat_brutDF[
-        "BF Matrix Plot"
-    ].astype(str)
-    cont_cat_brutDF = cont_cat_brutDF.style.format({"BF Matrix Plot": make_clickable})
+
+    BF_summary_location = f"{curr_dir}html_plots_and_tables/"
+
+    cont_cat_brutDF = cont_cat_brutDF.style.format({"LinksToPlots": make_clickable})
     cont_cat_brutDF.to_html(
-        f"{plot_folder_dir}/___BF_Cont_Cat_table.html", escape="html"
+        f"{BF_summary_location}/___BF_Cont_Cat_table.html", escape="html"
     )
 
     # BruteForce Matrix: Cat / Cat
-    bf_cat_cat_plots = BruteForce(
-        df=df, response=response, list1=categorical, list2=categorical
-    ).plot_brutforce("Categorical vs Categorical")
 
-    cat_cat_brutDF["BF Matrix Plot"] = bf_cat_cat_plots
-    cat_cat_brutDF["BF Matrix Plot"] = f"{plot_folder_dir}/" + cat_cat_brutDF[
-        "BF Matrix Plot"
-    ].astype(str)
-    cat_cat_brutDF = cat_cat_brutDF.style.format({"BF Matrix Plot": make_clickable})
-    cat_cat_brutDF.to_html(f"{plot_folder_dir}/___BF_Cat_Cat_table.html", escape="html")
+    cat_cat_brutDF = cat_cat_brutDF.style.format({"LinksToPlots": make_clickable})
+    cat_cat_brutDF.to_html(
+        f"{BF_summary_location}/___BF_Cat_Cat_table.html", escape="html"
+    )
 
     # BruteForce Matrix: Cont / Cont
-    bf_cont_cont_plots = BruteForce(
-        df=df, response=response, list1=continuous, list2=continuous
-    ).plot_brutforce("Continuos vs Continuous")
-    cont_cont_brutDF["BF Matrix Plot"] = bf_cont_cont_plots
-    cont_cont_brutDF["BF Matrix Plot"] = f"{plot_folder_dir}/" + cont_cont_brutDF[
-        "BF Matrix Plot"
-    ].astype(str)
-    cont_cont_brutDF = cont_cont_brutDF.style.format({"BF Matrix Plot": make_clickable})
+
+    cont_cont_brutDF = cont_cont_brutDF.style.format({"LinksToPlots": make_clickable})
     cont_cont_brutDF.to_html(
-        f"{plot_folder_dir}/___BF_Cont_Cont_table.html", escape="html"
+        f"{BF_summary_location}/___BF_Cont_Cont_table.html", escape="html"
     )
 
     print(

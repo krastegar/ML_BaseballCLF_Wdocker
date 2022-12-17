@@ -42,5 +42,5 @@ class RF_ranking_stat(RF_importance, read_data):
             feature_ranking["Feature_Importance"]
         ).tolist()
         curr_path = self.get_workingDir()
-        stats_df.to_html(f"{curr_path}/html_plots_and_tables/__FeatureRanking.html")
+        stats_df.to_html(f"{curr_path}html_plots_and_tables/__FeatureRanking.html")
         return

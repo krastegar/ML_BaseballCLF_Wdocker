@@ -6,8 +6,8 @@ scikit-learn
 pyspark
 statsmodels
 seaborn
-sqlalchemy
-mariadb==1.0.9
+sqlalchemy == 1.4.45
+mariadb
 gunicorn
 contourpy
 Jinja2

@@ -24,5 +24,7 @@ services:
     environment:
       PORT: "8080"
     volumes:
-      - "./baseball.sql:/app/baseball.sql" # need to work on mounting volume from relative path
+      - ./baseball.sql:/app/baseball.sql
+      - ./:/app/
       - ./html_plots_and_tables:/app/html_plots_and_tables
+      - ./html_plots_and_tables/subplots:/app/html_plots_and_tables/subplots

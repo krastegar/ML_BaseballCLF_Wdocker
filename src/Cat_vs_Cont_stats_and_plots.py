@@ -110,6 +110,7 @@ class Cont_Cat_stats_plots(
                     df=self.df,
                     predictors=self.predictors,
                 ).catResponse_vs_catPredictor()
+                file = test
                 predictor_name.append(cat_pred)
                 predictor_type.append("Categorical")
                 plot_paths.append(file)
@@ -150,6 +151,6 @@ class Cont_Cat_stats_plots(
         curr_path = self.get_workingDir()
         HW_4_html_df = HW_4_html_df.style.format({"Links to Plots": make_clickable})
         HW_4_html_df.to_html(
-            f"{curr_path}/html_plots_and_tables/__HW4_plots.html", escape="html"
+            f"{curr_path}html_plots_and_tables/__HW4_plots.html", escape="html"
         )
         return

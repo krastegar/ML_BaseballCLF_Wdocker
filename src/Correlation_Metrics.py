@@ -83,7 +83,7 @@ class Corr_report(read_data):
         print(corr_report_df)
         curr_path = self.get_workingDir()
         corr_report_df.to_html(
-            f"{curr_path}/html_plots_and_tables/__CorrelationRanking_report.html",
+            f"{curr_path}html_plots_and_tables/__CorrelationRanking_report.html",
             escape="html",
         )
         return

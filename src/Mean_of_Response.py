@@ -13,7 +13,7 @@ class DifferenceOfMeans(read_data):
     # ------ plotting the mean of response stuff ---------
     def plot_MoR(self):
         curr_path = self.get_workingDir()
-        plot_folder_dir = f"{curr_path}/html_plots_and_tables"
+        plot_folder_dir = f"{curr_path}html_plots_and_tables/subplots"
         weighted_mr, unweighted_mr = [], []
         bin_table_links, plotly_plot_links = [], []
         pred_label, response_label = [], []
@@ -32,7 +32,7 @@ class DifferenceOfMeans(read_data):
 
             # getting relative paths for each table to put into final report
             # table
-            table_path = f"{plot_folder_dir}/{pred} MR_table.html"
+            table_path = f"{pred} MR_table.html"
 
             # Getting file paths to plots that were generated in mean of response
             # analysis
@@ -40,8 +40,6 @@ class DifferenceOfMeans(read_data):
                 response=self.response, df=self.df, pred_input=pred
             ).plot_Mean_diff()
             file = MeanPlots
-            plot_path = f"{plot_folder_dir}/{file}"
-
             # calculating summations of squared differences
             unweighted_mean = np.sum(mr_df["MeanSquaredDiff"])
             weighted_mean = np.sum(mr_df["MeanSquaredDiffWeighted"])
@@ -51,7 +49,7 @@ class DifferenceOfMeans(read_data):
             weighted_mr.append(weighted_mean)
             unweighted_mr.append(unweighted_mean)
             bin_table_links.append(table_path)
-            plotly_plot_links.append(plot_path)
+            plotly_plot_links.append(file)
             pred_label.append(pred)
             response_label.append(self.response)
         mr_report_df = pd.DataFrame(
@@ -69,9 +67,9 @@ class DifferenceOfMeans(read_data):
         mr_report_df = mr_report_df.style.format(
             {"LinksToBinReport": make_clickable, "LinksToPlots": make_clickable}
         )
-
         # making final df report into an html table
         mr_report_df.to_html(
-            "html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html"
+            f"{curr_path}html_plots_and_tables/__MEANofRESPONSE_report.html",
+            escape="html",
         )
         return

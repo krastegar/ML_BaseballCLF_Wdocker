@@ -13,7 +13,7 @@ class sqlPandasSpark:
         self,
         db_user="root",
         db_pass="ROOT_ACCESS_PASSWORD",  # pragma: allowlist secret
-        db_host="mariadb",
+        db_host="mariadb",  # localhost, mariadb
         db_database="baseball",
         *args,
         **kwargs,
