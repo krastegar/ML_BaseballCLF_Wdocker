@@ -2,15 +2,12 @@ import math
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import seaborn as sns
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import (
-    auc,
     classification_report,
-    confusion_matrix,
     mean_squared_error,
     roc_auc_score,
     roc_curve,
@@ -138,14 +135,13 @@ class TrainTestModel(BruteForce, read_data):
         gb_features, LogReg_features = self.Feature_Importance()
 
         # Gradientboost plot
-        sns.set(rc={"figure.figsize": (30, 6)})
+        sns.set(rc={"figure.figsize": (30, 10)})
         sns.set_style("whitegrid")
         ax1 = sns.barplot(
             data=gb_features, x="Feature_Importance", y=gb_features.index, orient="h"
         )
         ax1.axes.set_title("GradientBoost Feature Ranks")
-        ax1.tick_params(labelsize=10)
-        plt.show()
+        plt.savefig("html_plots_and_tables/GB_ranks.png")
 
         # LogReg plot
         ax2 = sns.barplot(
@@ -154,9 +150,9 @@ class TrainTestModel(BruteForce, read_data):
             orient="h",
         )
         ax2.axes.set_title("LogisticRegression Feature Ranks")
-        ax2.set_xlabel("log(1/(p-val)", fontsize=13)
-        ax2.tick_params(labelsize=10)
-        plt.show()
+        ax2.set_xlabel("log(1/(p-val)", fontsize=19)
+        ax2.tick_params(labelsize=15)
+        plt.savefig("html_plots_and_tables/LogReg_ranks.png")
 
         return
 
@@ -198,5 +194,9 @@ class TrainTestModel(BruteForce, read_data):
             width=1100,
             height=900,
         )
-        fig.show()
+        curr_path = self.get_workingDir()
+        fig.write_html(
+            file=f"{curr_path}html_plots_and_tables/__ROC_GB_vs_LogReg.html",
+            include_plotlyjs="cdn",
+        )
         return
