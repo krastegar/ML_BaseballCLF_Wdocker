@@ -3,11 +3,17 @@ import sqlalchemy
 
 
 class sqlPandasSpark:
+    """
+    To make this class compatable with the docker container
+    I need to use the same password and db_host as mariadb image in
+    my docker compose file
+    """
+
     def __init__(
         self,
         db_user="root",
-        db_pass="root",  # pragma: allowlist secret
-        db_host="localhost",
+        db_pass="ROOT_ACCESS_PASSWORD",  # pragma: allowlist secret
+        db_host="mariadb",
         db_database="baseball",
         *args,
         **kwargs,
@@ -25,21 +31,13 @@ class sqlPandasSpark:
         sql_engine = sqlalchemy.create_engine(connect_string)
 
         query = """
-            SELECT * FROM Master
+            SELECT * FROM FeatureTable
         """
         df = pd.read_sql_query(query, sql_engine)
 
-        # making my response column : home_team_id, team_id, winner_home_or_away
-        win_col = []
-        for team_id, home_id, win in zip(
-            df["team_id"], df["home_team_id"], df["winner_home_or_away"]
-        ):
-            if team_id == home_id and win == "H":
-                i = 1
-                win_col.append(i)
-            else:
-                i = 0
-                win_col.append(i)
-        df["HomeWins"] = win_col
+        # -- want to remove metadata feature such as team_id or game_id
+        # unfortunately do not know how to do this without hard coding
+        droppedFeatures = ["Home_Team", "Away_Team", "game_id"]
+        df = df.drop(droppedFeatures, axis=1)
 
         return df

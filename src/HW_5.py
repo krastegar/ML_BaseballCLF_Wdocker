@@ -15,11 +15,16 @@ def main():
 
     # getting dataframe of my features from sql
     df = sqlPandasSpark().sql_to_pandas()
-    response = "HomeWins"
+    response = "Home_Team_Wins"
     predictors = [i for i in list(df.columns) if response not in i]
     dataset = TestDatasets()
-    _, _, _ = dataset.get_test_data_set()  # df, predictors, response
+    (
+        _,
+        _,
+        _,
+    ) = dataset.get_test_data_set()  # replace '_' w/ df, predictors, response
     # place holder for testing diff df
+    # print(predictors)
     # HW_4 plots
     hw_4 = Cont_Cat_stats_plots(response=response, df=df, predictors=predictors)
     _, _, _, _, _, _ = hw_4.predictor_plots()
@@ -42,31 +47,25 @@ def main():
     _ = BF_summary(response=response, df=df, predictors=predictors).bruteForce_summary()
 
     # Train test split
-    _ = "dummy"
+
     continuous, categorical, _ = read_data(
         response=response, df=df, predictors=predictors
     ).checkColIsContOrCat()
-    _, _ = TrainTestModel(
+    model_obj = TrainTestModel(
         response=response,
         df=df,
         predictors=predictors,
         list1=continuous,
         list2=categorical,
-        local_date=1,
-    ).trainer_tester()
-    # Analysis:
-    print(
-        """
-    Comparing precision, recall, f1-score, and accuracy.
-    We can see that the gradient boosted model has scored higher on
-    all metrics.
-
-    Notes on Assignment:
-    I listened to your feed back and all of the plots and tables are in a folder
-    called "html_plots_and_tables" in 1 directory outside this one
-    """
+        local_date=0,  # change this for non sql data
     )
+    _ = model_obj.trainer_tester()
 
+    _ = model_obj.Feature_Importance()
+
+    _ = model_obj.model_evaluation()
+
+    _ = model_obj.plot_feature_rank()
     return
 
 

@@ -1,4 +1,5 @@
 import itertools
+import os
 import random
 import sys
 import warnings
@@ -34,6 +35,10 @@ class read_data:
 
     def dataframe(self):
         return self.df, print(self.df)
+
+    def get_workingDir(self):
+        curr_path = str(os.path.abspath(os.getcwd()))
+        return curr_path
 
     def ChangeBinaryToBool(self):
 
@@ -156,9 +161,9 @@ class Cat_vs_Cont(read_data):
             xaxis_title=f"{self.df[self.categorical].name}",
             yaxis_title=f"{self.df[self.response].name}",
         )
-        # fig_2.show()
+        curr_path = self.get_workingDir()
         fig_2.write_html(
-            file=f"../html_plots_and_tables/ViolinPlots_{self.df[self.categorical].name}.html",
+            file=f"{curr_path}/html_plots_and_tables/ViolinPlots_{self.df[self.categorical].name}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"ViolinPlots_{self.df[self.categorical].name}.html"
@@ -170,9 +175,9 @@ class Cat_vs_Cont(read_data):
         group_labels = [f"{self.df[self.response]}"]  # name of the dataset
         fig = ff.create_distplot(hist_data, group_labels)
         # fig.show()
-
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"../html_plots_and_tables/HistData_Predictor_{self.continuous}_Response={self.response}",
+            file=f"{curr_path}/html_plots_and_tables/HistData_Predictor_{self.continuous}_Response={self.response}",
             include_plotlyjs="cdn",
         )
         file_string = f"HistData_Predictor_{self.continuous}_Response={self.response}"
@@ -193,14 +198,9 @@ class Cat_vs_Cont(read_data):
             yaxis_title=f"{self.df[self.categorical].name}",
         )
         # fig_no_relationship.show()
-        """
+        curr_path = self.get_workingDir()
         fig_no_relationship.write_html(
-            file=f"HeatMap: {self.df[self.categorical].name} vs {self.df[self.response].name} ",
-            include_plotlyjs="cdn",
-        )
-        """
-        fig_no_relationship.write_html(
-            file=f"../html_plots_and_tables/HeatMap_{self.categorical}_vs_{self.response}.html",
+            file=f"{curr_path}/html_plots_and_tables/HeatMap_{self.categorical}_vs_{self.response}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"HeatMap_{self.categorical}_vs_{self.response}.html"
@@ -226,9 +226,9 @@ class Cat_vs_Cont(read_data):
             xaxis_title=f"{self.continuous}",
             yaxis_title=f"{self.response}",
         )
-        # fig.show()
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"../html_plots_and_tables/Linear Regression_{self.continuous}.html",
+            file=f"{curr_path}/html_plots_and_tables/Linear Regression_{self.continuous}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"Linear Regression_{self.continuous}.html"
@@ -262,9 +262,9 @@ class Cat_vs_Cont(read_data):
             yaxis_title=f"{df[self.response].name}",
         )
         # fig.show()
-
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"../html_plots_and_tables/Logistic_regression_{df[self.continuous].name}.html",
+            file=f"{curr_path}/html_plots_and_tables/Logistic_regression_{df[self.continuous].name}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"Logistic_regression_{df[self.continuous].name}.html"
@@ -280,7 +280,7 @@ class RF_importance(read_data):
 
     def __init__(
         self,
-        regressor=1,
+        regressor=0,
         continuous=None,
         categorical=None,
         boolean=None,
@@ -472,7 +472,7 @@ class DiffMeanResponse(read_data):
 
     def plot_Mean_diff(self):
 
-        mean_diff_df = self.Mean_Squared_DF()
+        mean_diff_df = self.Mean_Squared_DF().sort_values("BinCenters", ascending=True)
         fig = go.Figure(
             layout=go.Layout(
                 title="Combined Layout",
@@ -514,9 +514,9 @@ class DiffMeanResponse(read_data):
             tickvals=mean_diff_df["BinCenters"], ticktext=mean_diff_df["Bin"]
         )
 
-        # fig.show()
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"../html_plots_and_tables/Mean_of_Response_response_=_{self.response}_vs_{self.pred}.html",
+            file=f"{curr_path}/html_plots_and_tables/Mean_of_Response_response_=_{self.response}_vs_{self.pred}.html",
             include_plotlyjs="cdn",
         )
         file_string = f"Mean_of_Response_response_=_{self.response}_vs_{self.pred}.html"
@@ -669,8 +669,9 @@ class Correlation(read_data):
         fig.update_layout(title="Correlation Matrix: Continuous / Continuous ")
         fig.show()
 
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file="../html_plots_and_tables/Correlation_Matrix_Continuous_vs_Continuous.html",
+            file=f"{curr_path}//html_plots_and_tables/Correlation_Matrix_Continuous_vs_Continuous.html",
             include_plotlyjs="cdn",
         )
         file_string = "Correlation_Matrix_Continuous_vs_Continuous"
@@ -684,10 +685,10 @@ class Correlation(read_data):
             aggfunc="first",
         )
         fig = px.imshow(cat_catDF)
-
         fig.update_layout(title="Correlation Matrix: Continuous / Categorical ")
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file="../html_plots_and_tables/Correlation Matrix_Continuous_vs_Categorical.html",
+            file=f"{curr_path}/html_plots_and_tables/Correlation Matrix_Continuous_vs_Categorical.html",
             include_plotlyjs="cdn",
         )
 
@@ -704,8 +705,9 @@ class Correlation(read_data):
         fig = px.imshow(cat_catDF)
 
         fig.update_layout(title="Correlation Matrix: Categorical / Categorical ")
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file="../html_plots_and_tables/Correlation Matrix_Categorical_vs_Categorical.html",
+            file=f"{curr_path}/html_plots_and_tables//Correlation Matrix_Categorical_vs_Categorical.html",
             include_plotlyjs="cdn",
         )
         fig.show()
@@ -821,49 +823,54 @@ class BruteForce(DiffMeanResponse):
 
         return pred1, pred2, mean_square_diff, weighted_diff, weighted_means
 
-    def BF_df(self):
-        cont_cat_bruteforce = []
+    def BF_df(self, title):
+        """
+        Function is the body of html bruteforce report. It calculates bruteforce
+        for every pair in list of predictors and gets both weighted and unweighted
+        scores of each bin-pair and puts it into a pandas df
+        """
+        bruteforce_df = []
         for tupl in itertools.product(self.list1, self.list2):
             if tupl[0] == tupl[1]:
                 continue
             BruF = self.brute_force_2d(pred1=tupl[0], pred2=tupl[1])
             pred1, pred2, mean_square_diff, weighted_diff, _ = BruF
-            mean_unweighted, mean_weighted = np.mean(mean_square_diff), np.mean(
+            mean_unweighted, mean_weighted = np.sum(mean_square_diff), np.sum(
                 weighted_diff
             )
-            cont_cat_bruteforce.append((pred1, pred2, mean_unweighted, mean_weighted))
+            _, _, _, _, weighted_means_matrix = BruF
+            file_paths = self.plot_func(
+                weighted_means_matrix, pred1=tupl[0], pred2=tupl[1], title=title
+            )
+            bruteforce_df.append(
+                (pred1, pred2, mean_unweighted, mean_weighted, file_paths)
+            )
         BF_cont_cat_df = pd.DataFrame(
-            cont_cat_bruteforce, columns=["Pred 1", "Pred 2", "Unweighted", "Weighted"]
+            bruteforce_df,
+            columns=["Pred 1", "Pred 2", "Unweighted", "Weighted", "LinksToPlots"],
         )
 
         return BF_cont_cat_df.sort_values("Weighted", ascending=False)
 
-    def plot_func(self, brutforce_df, pred1, pred2, title):
+    def plot_func(self, weighted_means_matrix, pred1, pred2, title):
         # title should be either, catVScat, catVScont, contVScont
-        fig = px.imshow(brutforce_df)
+        # I need pred1, pred2, title input for file string path
+        # whole puprose of this function is to get file paths which
+        # can be used for html table with links
+
+        # this figure is plotting 2D weighted means matrix
+        fig = px.imshow(weighted_means_matrix)
 
         fig.update_layout(title=f"BruteForce {title}: {pred1} vs {pred2}")
+        curr_path = self.get_workingDir()
         fig.write_html(
-            file=f"../html_plots_and_tables/BruteForce_{title}_{pred1}_vs_{pred2}.html",
+            file=f"{curr_path}/html_plots_and_tables/BruteForce_{title}_{pred1}_vs_{pred2}.html",
             include_plotlyjs="cdn",
         )
         # fig.show()
         file_string = f"BruteForce_{title}_{pred1}_vs_{pred2}.html"
 
         return file_string
-
-    def plot_brutforce(self, title):
-        file_names = []
-        for tupl in itertools.product(self.list1, self.list2):
-            if tupl[0] == tupl[1]:
-                continue
-            brutDF = self.brute_force_2d(pred1=tupl[0], pred2=tupl[1])
-            _, _, _, _, bf_df = brutDF
-            cont_cat_brutDF = self.plot_func(
-                bf_df, pred1=tupl[0], pred2=tupl[1], title=title
-            )
-            file_names.append(cont_cat_brutDF)
-        return file_names
 
 
 def get_test_data_set(data_set_name: str = None) -> (pd.DataFrame, List[str], str):
@@ -971,19 +978,18 @@ def check_list(list1, list2):
 
 def make_clickable(val):
     # target _blank to open new window
-    return '<a target="_blank" href="{}">{}</a>'.format(val, val)
+    return '<a target="_blank" href="{}"></a>'.format(val, val)
 
 
 def main():
-    # getting current working dir
-    plot_folder_dir = "/home/bioinfo/Desktop/html_plots_and_tables"
 
     # Getting DF, predictors, and response
     df, predictors, response = get_test_data_set()
     # read in object
     object = read_data(response=response, df=df, predictors=predictors)
     object.dataframe()
-
+    curr_dir = object.get_workingDir()
+    plot_folder_dir = f"{curr_dir}/html_plots_and_tables"
     # split predictor columns into respective groups
     # and response variable category
     continuous, categorical, boolean = object.checkColIsContOrCat()
@@ -1002,6 +1008,7 @@ def main():
         [],
         [],
     )
+
     for cont_pred in continuous:
         if continuous is None:
             continue
@@ -1102,7 +1109,9 @@ def main():
     )
 
     HW_4_html_df = HW_4_html_df.style.format({"Links to Plots": make_clickable})
-    HW_4_html_df.to_html("../html_plots_and_tables/__HW4_plots.html", escape="html")
+    HW_4_html_df.to_html(
+        f"{curr_dir}/html_plots_and_tables/__HW4_plots.html", escape="html"
+    )
 
     # RF regressor, obtaining feature importance
     if response_VarGroup == "continuous":
@@ -1128,7 +1137,7 @@ def main():
         feature_ranking["Feature_Importance"]
     ).tolist()
 
-    stats_df.to_html("../html_plots_and_tables/__FeatureRanking.html")
+    stats_df.to_html(f"{curr_dir}/html_plots_and_tables/__FeatureRanking.html")
 
     # ------ plotting the mean of response stuff ---------
     weighted_mr, unweighted_mr = [], []
@@ -1168,7 +1177,7 @@ def main():
         {"LinksToBinReport": make_clickable, "LinksToPlots": make_clickable}
     )
     mr_report_df.to_html(
-        "../html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html"
+        f"{curr_dir}/html_plots_and_tables/__MEANofRESPONSE_report.html", escape="html"
     )
 
     # ----- getting Predictor correlation values -------
@@ -1236,7 +1245,8 @@ def main():
     ).sort_values("Corr Coef", ascending=False)
     print(corr_report_df)
     corr_report_df.to_html(
-        "../html_plots_and_tables/__CorrelationRanking_report.html", escape="html"
+        f"{curr_dir}/html_plots_and_tables/__CorrelationRanking_report.html",
+        escape="html",
     )
 
     # ---- Plotting Correlation Matrix ---------

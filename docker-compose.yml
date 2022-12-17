@@ -1,0 +1,28 @@
+version: "3.3"
+
+services:
+  mariadb:
+    image: lscr.io/linuxserver/mariadb:latest
+    container_name: mariadb
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - MYSQL_ROOT_PASSWORD=ROOT_ACCESS_PASSWORD
+      - TZ=Europe/London
+    volumes:
+      - .db:/config
+    ports:
+      - 4308:3306 # dont use same port as system
+
+  SQL_ROL_AVG:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: baseball
+    ports:
+      - "5001:8080"
+    environment:
+      PORT: "8080"
+    volumes:
+      - "./baseball.sql:/app/baseball.sql" # need to work on mounting volume from relative path
+      - ./html_plots_and_tables:/app/html_plots_and_tables
