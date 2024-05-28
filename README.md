@@ -38,7 +38,7 @@ To install the project, follow these steps:
 To run the project, use the following command:
 ```sh
 docker-compose up
-
+```
 ## Features
 This project includes reproducible analysis that contains a machine learning model and is containerized. Some key features of the analysis are:
 
@@ -80,12 +80,13 @@ Using a brute force model, trends in the combinations of features were observed 
 A correlation test on all features was conducted to determine if any features needed to be dropped. Most features did not correlate well, which is beneficial for feeding these features into a logistic regression model.
 
 ### Results
-Models and Training
+#### Models and Training
 Two different models were trained with an 80/20 training/testing split:
 
 GradientBoostingClassifier
 LogisticRegressor
-Model Evaluation
+
+#### Model Evaluation
 The models were evaluated by looking at the ROC curve. The GradientBoostingClassifier had a slight edge over the LogisticRegressor model with an AUC score of 0.64.
 
 ## Contributing
